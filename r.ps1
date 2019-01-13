@@ -1,8 +1,10 @@
 ﻿Clear-Host
 
+#	fff -n -f red -Object ('{0:0}' -f $CountLo)
+
 ## Variables
 ##▼▼
-Set-Variable 'AllowExit'
+Set-Variable 'AllowExit'	-value 0
 Set-Variable 'BetLo'
 Set-Variable 'BetMed'
 Set-Variable 'BetHi'
@@ -13,8 +15,8 @@ Set-Variable 'BetMethod'
 Set-Variable 'BetZone'
 Set-Variable 'Cash'
 Set-Variable 'CashOld'
-Set-Variable 'CashLo'
-Set-Variable 'CashHi'
+Set-Variable 'CashLo'		-value 0
+Set-Variable 'CashHi'		-value 0
 Set-Variable 'PercentLo'
 Set-Variable 'PercentMed'
 Set-Variable 'PercentHi'
@@ -25,7 +27,8 @@ Set-Variable 'ColorLo'
 Set-Variable 'ColorMed'
 Set-Variable 'ColorHi'
 Set-Variable 'OpeningBet'
-Set-Variable 'Site'
+Set-Variable 'SaveToFile'	-value 0
+Set-Variable 'Site'			-value 0
 Set-Variable 'Units'
 Set-Variable 'ValidSpin'
 
@@ -36,14 +39,14 @@ $LastRA = @()
 
 ##▲
 
-$AllowExit	= 11
+$AllowExit	= 1
 $SaveToFile	= 0
-$OpeningBet	= 10
+$Site			= 0
 $BetZone		= 12
+$OpeningBet	= 10
 $Units		= 2
 $BetMethod	= 'Up2'
-$LastRA		= 1,5,10,15
-
+$LastRA		= 1,5
 
 #exit
 
@@ -155,25 +158,32 @@ Function F-Update {
 		fff -f m $item	
 		## Get Lo/Med/Hi count and percenatage
 		If ( $Gob.count -ge $item ) {
-			$loCount = $medCount = $hiCount = 0
+			$script:CountLo = $script:CountMed = $script:CountHi = 0
 			Foreach ( $item in $Gob ) {
 				Switch ( $item ) {
 					{ $_ -in 0 } { BREAK }  ##	spin 0
-					{ $_ -in 1..12 }  { $loCount ++  ; BREAK }	##	Lo
-					{ $_ -in 13..24 } { $medCount ++ ; BREAK }	##	Med
-					{ $_ -in 25..36 } { $hiCount ++  ; BREAK }	##	Hi
+					{ $_ -in 1..12 }  { $script:CountLo ++  ; BREAK }	##	Lo
+					{ $_ -in 13..24 } { $script:CountMed ++ ; BREAK }	##	Med
+					{ $_ -in 25..36 } { $script:CountHi ++  ; BREAK }	##	Hi
 				}
-				[int] $script:LoP  = $locount/$Gob.count*100
-				[int] $script:MedP = $medCount/$Gob.Count*100
-				[int] $script:HiP = $hiCount/$Gob.Count*100
+				[int] $script:PercentLo  = $CountLo/$Gob.count*100
+				[int] $script:PercentMed = $CountMed/$Gob.Count*100
+				[int] $script:PercentHi = $CountHi/$Gob.Count*100
 			} 	## END Foreach
-		## Get Lowest Count and Highest Count
-			$colorRA =  $LoP, $MedP, $HiP
+		## Get Lowest Percent, Highest Percent and Color
+			$colorRA =  $PercentLo, $PercentMed, $PercentHi
 			$minValue = [int]($colorRA | measure -Minimum).Minimum
 			$maxValue = [int]($colorRA | measure -Maximum).Maximum
 			$minIndex = $colorRA.IndexOf($minValue)
 			$maxIndex = $colorRA.IndexOf($maxValue)
 			$colorLo= $colorMed = $colorHi = "cyan"
+			If ( $minValue -eq 0 ) {
+				$script:CountLo = $MinIndex
+				$script:ColorLo = 'Red'
+			}
+
+
+
 			fff 'minValue ' $minValue
 			fff 'maxValue ' $maxValue
 			fff 'minIndex ' $minIndex
@@ -242,29 +252,24 @@ Function F-Display {
 ##▼▼
 	Write-Host -n  $( " " * 7 )
 	Write-Host -n -f DarkGray "Time: "
-	$hrs  = '{0:0}' -f $Timer.Elapsed.Hours
-	$mins = '{0:00}' -f $Timer.Elapsed.Minutes
-#	$mins = '{0:00}' -f $Timer.Elapsed.Milliseconds
-	Write-Host ('{0}:{1}' -f $hrs,$mins ) -nonewline -f DarkGray
+	Write-Host -Object ('{0}:{1}' -f ( '{0:0}' -f $Timer.Elapsed.Hours ) , ( '{0:00}' -f $Timer.Elapsed.Minutes ) ) -nonewline -f DarkGray
 ##▲
 	##	Cash
 ##▼▼
-	Write-Host -n -f DarkGray "        Cash: "
-	$_cash = '{0:C0}' -f $Cash
-	$gap = $_cash.length
-	Write-Host -n  $( " " * ( 7 - $gap ) )
-	If ( $Cash -ge 0 ) { Write-Host -f Green $_cash } Else { Write-Host -f Red $_cash }
+	Write-Host -n -f DarkGray "       Cash: "
+	$gap = ('{0:C0}' -f $Cash).length
+	Write-Host -n  $( " " * ( 8 - $gap ) )
+	If ( $Cash -ge 0 ) { Write-Host -f Green ( '{0:C0}' -f $Cash ) } Else { Write-Host -f Red ( '{0:C0}' -f $Cash ) }
+
 ##▲
 	## Low / High
 ##▼▼
 	Write-host -n -f DarkGray '  Low: '
-	$_cashlo = '{0:C0}' -f $CashLo
-	$_cashhi = '{0:C0}' -f $CashHi
-	Write-host -n -f DarkGray $_cashlo
-	$gap = $_cashlo.length
+	Write-host -n -f DarkGray ( '{0:C0}' -f $CashLo )
+	$gap = ( '{0:C0}' -f $CashLo ).length
 	Write-Host -n  $( " " * ( 10 - $gap ) )
 	Write-host -n -f DarkGray '  High: '
-	Write-host  -f DarkGray $_cashhi
+	Write-host  -f DarkGray ( '{0:C0}' -f $CashHi )
 ##▲
 	## Previous Bets
 ##▼▼
@@ -302,7 +307,7 @@ Function F-Display {
 	Write-host -n  -f yellow $Gob[-1]
 	$gap = [Math]::Floor([Math]::Log10( $Gob[-1]  + 1 ) )
 	If ( $Gob[-1] -eq 0 ) { $gap = 1 } Else { $gap = [Math]::Floor([Math]::Log10( $Gob[-1] ) + 1) }
-	Write-Host -n $( " " * ( 11 - $gap ) )
+	Write-Host -n $( " " * ( 10 - $gap ) )
 ##▲
 	## You Won/Lost
 ##▼▼
@@ -311,13 +316,13 @@ Function F-Display {
 		$_cashLost = '{0:C0}' -f -$oldBetTotal
 		$gap = $_cashLost.Length
 		fff -n -f red 'Lost:'
-		Write-Host -n $( " " * ( 8 - $gap ) )
+		Write-Host -n $( " " * ( 9 - $gap ) )
 		fff -n -f red $_cashLost
 	} Else {                                  ## Won
 		fff -n -f green ' Won:'
 		$_cashWon = '{0:C0}' -f ( $oldBetTotal / 2 )
 		$gap = $_cashWon.Length
-		Write-Host -n $( " " * ( 8 - $gap ) )
+		Write-Host -n $( " " * ( 9 - $gap ) )
 		fff -n -f green  $_cashWon
 	}
 ##▲
@@ -326,8 +331,8 @@ Function F-Display {
 	Write-Host -f DarkGray "01234567890123456789012345678901234567890123456789012345"
 	## Percentages 
 	Write-Host -f darkcyan "        Lo        Med        Hi"
-	fff 'countLo: --> '	 $CountLo
-	fff '$PercentLo --> ' $PercentLo
+	fff -n -f red -Object ('{0:0}' -f $CountLo)
+	fff -f y '$PercentLo --> ' $PercentLo
 
 
 

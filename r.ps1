@@ -1,7 +1,4 @@
 ﻿Clear-Host
-### asdlfkajsdflasfjk
-####  Gary
-
 
 ## Variables
 ##▼▼
@@ -46,52 +43,6 @@ $BetZone		= 12
 $Units		= 2
 $BetMethod	= 'Up2'
 $LastRA		= 1,5,10,15
-
-
-
-## *****************
-#gv -scope global, local, script, 0 , 1, 2
-#gv 
-##  Seen in GV 
-##  Seen in Local
-##  Seen in 0
-
-##  NOT seen in Global
-##  NOT seen in Script
-##  NOT seen in 1
-##  NOT ALLOWED in 2
-## *****************
-
-
-
-Set-Variable 'val'
-$val = 'this is the value of val at the very start'
-## Scope 0 is current or local 
-## Scope 1 immediate parent
-## Scope 2 parent of parent
-## Scope 3 parent of parent of parent
-#gv  ## seen in gv 
-#gv -scope global ## NOT seen in global 
-#gv -scope local ## Seen in Local
-#gv -scope script ## NOT Seen in Script
-#gv -scope 0 ## Seen in 0
-#gv -scope 1 ## Not Seen in 0
-
-#$script:val = 0
-function foo()
-{
-    $script:val = 333333
-#    $global:val = 333333
-#    $local:val = 333333
-}
-foo
-
-
-
-write-host -n  -f y  "The val is: ";fff -f Cyan  $val
-
-
-
 
 
 #exit

@@ -279,19 +279,19 @@ Function F-Display {
 			$RA = F-Last $item
 			##	Lo
 			fff -n '  '
-			fff -n "$($RA.loCount) "
+			fff -n -f DarkGray "$($RA.loCount) "
 			fff -n -f $RA.loColor   $RA.loPercent
 			fff -n -f $RA.loColor "%"
 			$gap = ( $RA.loCount.ToString().Length + $RA.loPercent.ToString().Length )
 			Write-Host -n $( " " * ( 8 - $gap ) )
 			##	Med
-			fff -n "$($RA.medCount) "
+			fff -n -f DarkGray "$($RA.medCount) "
 			fff -n -f $RA.medColor   $RA.medPercent
 			fff -n -f $RA.medColor "%"
 			$gap = ( $RA.medCount.ToString().Length + $RA.medPercent.ToString().Length )
 			Write-Host -n $( " " * ( 8 - $gap ) )
 			##	Hi
-			fff -n "$($RA.hiCount) "
+			fff -n -f DarkGray "$($RA.hiCount) "
 			fff -n -f $RA.hiColor   $RA.hiPercent
 			fff -n -f $RA.hiColor "%"
 			$gap = ( $RA.hiCount.ToString().Length + $RA.hiPercent.ToString().Length )
@@ -305,7 +305,7 @@ Function F-Display {
 ## Settings
 $AllowExit	= 1
 $SaveToFile	= 0
-$Site			= 0
+$Site			= 'OLG'
 $BetZone		= 12
 $OpeningBet	= 5
 $Units		= 1
@@ -321,13 +321,13 @@ While (1) {
 	Clear-Host
 	[Void] $Gob.Add( $spin )
 	F-UpDate
+	If ( $SaveToFile ) {
+	## Add Content 	▼ ▼
+		$DataPath = 'D:\GitHub\Dolly' ; $TheDate =  Get-Date -UFormat %b%e ; $Ext = 'txt'
+		$DataFile  =  ($DataPath + "\" + $Site + "." + $TheDate + "." + $Ext)
+		If ($Site ) { $spin | Add-Content $DataFile }
+	}
+##▲
 }
 
-<#
-	## Add Content 	▼▼
-	$DataPath = 'D:\GitHub\manual' ; $TheDate =  Get-Date -UFormat %b%e ; $Ext = 'txt'
-	$DataFile  =  ($DataPath + "\" + $Site + "." + $TheDate + "." + $Ext)
-	If ($Site ) { $spin | Add-Content $DataFile }
-##▲
-#>
 

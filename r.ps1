@@ -1,5 +1,4 @@
 ﻿Clear-Host
-
 ## Variables
 ##▼▼
 Set-Variable 'AllowExit'	-value 0

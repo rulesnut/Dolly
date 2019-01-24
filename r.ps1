@@ -36,14 +36,23 @@ Function F-Initialize {
 		$script:BetLo  = $OpeningBet
 		$script:BetMed = $OpeningBet
 		$script:BetHi  = 0
+		$script:Cash = 0
+		$script:CashHi = 0
+		$script:CashLo = 0
 	}	Elseif ($Betzone -eq 13 ) {
 		$script:BetLo  = $OpeningBet
 		$script:BetMed = 0
 		$script:BetHi  = $OpeningBet
+		$script:Cash = 0
+		$script:CashHi = 0
+		$script:CashLo = 0
 	} Else {
 		$script:BetLo  = 0
 		$script:BetMed = $OpeningBet
 		$script:BetHi  = $OpeningBet
+		$script:Cash = 0
+		$script:CashHi = 0
+		$script:CashLo = 0
 	}
 }	##▲	END FUNCTION
 ## Spin Validate()
@@ -179,7 +188,7 @@ Function F-Update {
 		return $val
 	}	##	▲	END Function
 ## SwitchBets()
-##▼ ▼
+##▼▼
 Function F-SwitchBets ( $T ,$S )  {
 	[int] $lo = 0
 	[int] $med = 0
@@ -194,12 +203,6 @@ Function F-SwitchBets ( $T ,$S )  {
 		[int] $Phi = ( $hi / $T * 100 )
 	}
 	## Get Betzone
-		# Find the betzone that I am NOT Betting on 
-		fff 'this is Betzone'   $Betzone
-		fff 'this is Plo'   $Plo
-		fff 'this is Pmed'   $Pmed
-		fff 'this is Phi'   $Phi
-		read-host
 		If ( $Betzone -eq 12 -AND $Plo -le 25 ) {
 			$script:BetZone = 23
 			$script:BetHi = $BetLo
@@ -345,28 +348,27 @@ Function F-Display {
 	$gap = $( $BetLo + $BetMed + $BetHi ).ToString().Length
 	Write-Host -n $( " " * ( 9 - $gap ) )
 	If ( $Betzone -eq 12) {
-		fff -n -f yellow $BetLo
+		Write-Host -n -f yellow $BetLo
 		$gap = $BetLo.ToString().Length
 		Write-Host -n $( " " * ( 8 - $gap ) )
-		fff -n -f yellow $BetMed
+		Write-Host -n -f yellow $BetMed
 	}
 	If ( $Betzone -eq 13) {
-		fff -n -f yellow $BetLo
+		Write-Host -n -f yellow $BetLo
 		$gap = $BetLo.ToString().Length
 		Write-Host -n $( " " * ( 17 - $gap ) )
-		fff -n -f yellow $BetHi
+		Write-Host -n -f yellow $BetHi
 	}
 	If ( $Betzone -eq 23) {
-		fff -n -f yellow "       " $BetMed
+		Write-Host -n -f yellow "       " $BetMed
 		$gap = $BetMed.ToString().Length
 		Write-Host -n $( " " * ( 9 - $gap ) )
-		fff -n -f yellow $BetHi
+		Write-Host -n -f yellow $BetHi
 	}
 ##▲
 #TODO mm
 
 }##▲	END Display
-
 ##	↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
 #	$Mode = 'Play'
 	$Mode = 'Audit'
@@ -384,21 +386,21 @@ If ( $Mode -eq 'Play' ) {
 }
 ## Audit Settings
 If ( $Mode -eq 'Audit' ) {
-	##	GetData Choices:        32 is FAKE FOR TESTING
+	##	GetData Choices:        22 is FAKE FOR TESTING
 	##	GetData Choices:        62,96,132,137,198,302,419,539
-	$GetData = Get-ChildItem -af 62*
+	$GetData = Get-ChildItem -af 22*
 	[System.Collections.ArrayList] $Data = Get-Content $GetData
-	$LastRA = 6,12,18,24,36,42,50
+#	$LastRA = 6,12,18,24,36,42,50
+	$LastRA = 2000
 	$WriteSummary = 0
-	$ShiftPercent = @(22) ;
-	$TrackingLast = @(12)
+	$ShiftPercent = @(22,25) ;
+	$TrackingLast = @(12,15)
 	F-Initialize
+#	$Pace = 1
 	$Pace = 'Manual'
 #	$Pace = 'Turbo'
-#	$Pace = 1
 }
 ##	↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
-
 ## Start Main
 If ( $Mode -eq 'Play') {
 	##	Play
@@ -424,8 +426,8 @@ If ( $Mode -eq 'Play') {
 } Else {
 	##	Audit
 ##▼ ▼
-	$ShiftPercent = @(22) ;
-	$TrackingLast = @(12)
+#	$ShiftPercent = @(22,25) ;
+#	$TrackingLast = @(12,15)
 	Foreach ( $S in $ShiftPercent ) {
 		Foreach ( $T in $TrackingLast ) {
 			##	Foreach Spin
@@ -439,7 +441,7 @@ If ( $Mode -eq 'Play') {
 				If ( $Pace -ne 'Turbo' ) { F-Display }
 				If ( $Pace -eq  'Manual' ) { Read-Host "`n`n`n`n$(" " * (10)) Next" }
 				If ( $Pace -eq  'Turbo' ) {  }
-				If ( $Pace -eq  1 ) { Sleep .0001  }
+				If ( $Pace -eq  1 ) { Sleep 1  }
 			## ▲
 				If ( $Gob.Count -ge $T ) {
 					F-SwitchBets $T $S
@@ -447,7 +449,7 @@ If ( $Mode -eq 'Play') {
 			}## END Foreach Spin
 			## ▲
 			##	Summary
-##▼▼
+##▼▼#
 			$Rob = "" | Select-Object -Property Site, Date, Units, Open, Method, Spins, Track , 'Shift%', Lowest, Highest, Cash
 			$splitRA = $GetData.Name.Split(".")
 			$Rob.Site		= $splitRA[1]
@@ -461,9 +463,10 @@ If ( $Mode -eq 'Play') {
 			$Rob.Lowest		= $CashLo
 			$Rob.Highest	= $CashHi
 			$Rob.Cash		= $Cash
-			fff
-			fff
+			Write-Host
+			Write-Host
 			$Rob | Format-Table *
+			read-Host
 ##▲	END SUMMARY
 			##	Write Summary
 ##▼▼
@@ -474,12 +477,7 @@ If ( $Mode -eq 'Play') {
 ##▲	END WRITE SUMMARY
 		##	Reset Variables
 		$Gob = [System.Collections.ArrayList] @() ;
-		$Cash = 0 ;
-		$BetLo  = $OpeningBet ;
-		$BetMed = $OpeningBet ;
-		$BetHi  = $OpeningBet ;
-		$CashLo = 0 ;
-		$CashHi = 0 ;
+		F-Initialize
 		}##	 END	FOREACH	$TRACKINGRA
 	}##	 END	FOREACH	PercentLimit
 	##	Runtime

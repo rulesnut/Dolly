@@ -1,4 +1,19 @@
-﻿Clear-Host ; ## Variables	√
+﻿Clear-Host ;
+<#
+$Working on:  
+	write tracking value and switching value to screeen in audit
+	write tracking value and switching value to screeen in audit
+	further check audit mode
+	save values for  12, 13, 23 with no tracking or switching to compare against
+#>	
+
+
+#TODO		## Need to add something that allows my to change manually 
+
+	#TODO		## progressive bets?   half progressive?  Martingale ??
+	#TODO		## Change paroli to take one press one
+
+ ## Variables	√
 ##▼▼
 Set-Variable 'AllowExit'	-value 0
 Set-Variable 'AuditCounter'	-value 0
@@ -8,7 +23,6 @@ Set-Variable 'BetHi'
 Set-Variable 'BetLold'
 Set-Variable 'BetMold'
 Set-Variable 'BetHold'
-Set-Variable 'BetMethod'
 Set-Variable 'BetZone'
 Set-Variable 'Cash'
 Set-Variable 'CashOld'
@@ -17,6 +31,8 @@ Set-Variable 'CashHi'		-value 0
 Set-Variable 'Mode'			-value 'Play'
 Set-Variable 'OpeningBet'
 Set-Variable 'Pace'
+Set-Variable 'ParoliCount'	-value 0
+Set-Variable 'ParoliLimit'	-value 3
 Set-Variable 'SaveToFile'	-value 0
 Set-Variable 'Site'			-value 0
 Set-Variable 'Units'
@@ -55,16 +71,16 @@ $MainScript = {
 			$script:CashHi = 0
 			$script:CashLo = 0
 		}
-	}	##▲	END Call-Initialize
+	}	##▲	END Call-Initialize()
 	## Spin Validate()
 ##▼▼
 	Function Call-SpinValidate {
 		If ( $AllowExit ) { If ( $spin -eq 't' -OR $spin -eq 'tt' -OR $spin -eq 'rr' ) { exit } }
 		If ( $spin -match '^[0-9]$' -OR $spin -match '^[1-2][0-9]$' -OR $spin -match '^[3][0-6]$' )  {
 		} Else { Write-Host -f Red " [ NOT VALID NUMBER ]"  ; Start-Sleep 1 ; Clear-Host ; Continue ; }
-	}	##▲	END Call-SpinValidate
+	}	##▲	END Call-SpinValidate()
 	## Update()
-##▼▼
+##▼ ▼
 	Function Call-Update {
 		$script:BetLold = $BetLo
 		$script:BetMold = $BetMed
@@ -109,6 +125,8 @@ $MainScript = {
 		}	
 		##	▲	END Cash
 		## Bets
+		##▼ ▼
+		## Up2
 		##▼▼
 		If ( $BetMethod -eq 'Up2' ) {
 			Switch ( $WinRA[-1] ) {
@@ -135,11 +153,96 @@ $MainScript = {
 					If ($BetMed -le $OpeningBet ) { $script:BetMed = $OpeningBet }
 					If ($BetHi -le $OpeningBet ) { $script:BetHi = $OpeningBet }
 				}
-				Default { Write-Host 'Houston... Bet Switch' ; exit }
+				Default { Write-Host 'Houston... Bet Up2' ; exit }
 			} ## 	END Switch
-		}
+		}##	▲	END UP2
+		## Double
+		##▼▼
+		If ( $BetMethod -eq 'Double' ) {
+			Switch ( $WinRA[-1] ) {
+				## Lose
+				{ $_ -eq 'L12' } { $script:BetLo  = ( $BetLo + ( $BetLo * 2 ) ) ; $script:BetMed  = ( $BetMed + ( $Betmed * 2 ) ) }
+				{ $_ -eq 'L13' } { $script:BetLo  = $BetLo +  ( 2 * $Units ) ; $script:BetHi  = $BetHi  + ( 2 * $Units ) }
+				{ $_ -eq 'L23' } { $script:BetMed = $BetMed + ( 2 * $Units ) ; $script:BetHi  = $BetHi  + ( 2 * $Units ) }
+				## Win
+				{ $_ -eq 'W12' } {
+					$script:BetLo = $OpeningBet
+					$script:BetMed = $OpeningBet
+				}
+				{ $_ -eq 'W13' } {
+					$script:BetLo = $OpeningBet
+					$script:BetHi = $OpeningBet
+				}
+				{ $_ -eq 'W23' } {
+					$script:BetMed = $OpeningBet
+					$script:BetHi = $OpeningBet
+				}
+				Default { Write-Host 'Houston... Bet Double ' ; exit }
+			} ## 	END Switch
+		}##	▲	END UP2
+		## Paroli
+		##▼▼
+<#	
+	You place your first $5 bet and win $5. You place your second bet of $10.
+	You win with the second bet and place your third bet of $20. You win with
+	the third bet and this is your stopping point for the Paroli betting system.
+	You will then proceed back to the original bet of $5 and continue to use the
+	system throughout the game. You may try for four or five wins in a row but
+	it will be harder to complete the sequence. If you were to lose at any time
+	you go back to your original starting bet and begin the sequence over again
+#>
+	
+		If ( $BetMethod -eq 'Paroli' ) {
+			Switch ( $WinRA[-1] ) {
+				## Win
+				{ $_ -eq 'W12' } {
+					If ( $ParoliCount -lt $ParoliLimit ) {
+					 $script:BetLo  = ( $BetLo * 2 )  ;
+					 $script:BetMed  = ( $BetMed * 2 )  ;
+					 $script:ParoliCount ++
+					} Else {
+						$script:BetLo = $OpeningBet
+						$script:BetMed = $OpeningBet
+					}
+				}
+				{ $_ -eq 'W13' } {
+					If ( $ParoliCount -lt $ParoliLimit ) {
+					 $script:BetLo  = ( $BetLo * 2 )  ;
+					 $script:BetHi  = ( $BetHi * 2 )  ;
+					 $script:ParoliCount ++
+					} Else {
+						$script:BetLo = $OpeningBet
+						$script:BetHi = $OpeningBet
+					}
+				}
+				{ $_ -eq 'W23' } {
+					If ( $ParoliCount -lt $ParoliLimit ) {
+					 $script:BetMed  = ( $BetMed * 2 )  ;
+					 $script:BetHi  = ( $BetHi * 2 )  ;
+					 $script:ParoliCount ++
+					} Else {
+						$script:BetMed = $OpeningBet
+						$script:BetHi = $OpeningBet
+					}
+				}
+				## Lose
+				{ $_ -eq 'L12' } {
+					$script:BetLo = $OpeningBet
+					$script:BetMed = $OpeningBet
+				}
+				{ $_ -eq 'L13' } {
+					$script:BetLo = $OpeningBet
+					$script:BetHi = $OpeningBet
+				}
+				{ $_ -eq 'L23' } {
+					$script:BetMed = $OpeningBet
+					$script:BetHi = $OpeningBet
+				}
+				Default { Write-Host 'Houston... Bet Paroli' ; exit }
+			} ## 	END Switch
+		}##	▲	END UP2
 		##	▲	END Bets
-	}	##▲	END Call-Update
+	}	##▲	END Call-Update()
 	## Last()
 			##▼▼
 		Function Call-Last( $el ) {
@@ -187,9 +290,9 @@ $MainScript = {
 			$val.hiColor = $hiColor
 			$val.el = $el
 			return $val
-		}	##	▲	END Function
+		}	##	▲	END LAST()
 	## SwitchBets()
-##▼ ▼
+##▼▼
 	Function Call-SwitchBets ( $T , $S )  {
 		[int] $lo = 0
 		[int] $med = 0
@@ -204,84 +307,72 @@ $MainScript = {
 			[int] $Phi = ( $hi / $T * 100 )
 		}
 		## Get Betzone
+		## DisplaySwitch()
+			##▼▼
+		Function Call-DisplaySwitch {
+			If ( $Mode -eq 'Play') {
+				Clear-Host
+				Write-Host -f y  ("`n`nBets Have Switched !!!!!!!!!!!!!!!!!!!!!!`n`n" *  2 )`n
+				Read-Host
+				Clear-Host
+			}
+		}	##	▲	END DisplaySwitch()
 		Switch ( $Betzone ) {
 			{ $_ -eq 12 -AND $Plo -le $S  } {
-	<#
 				$script:BetZone = 23
 				$script:BetHi = $BetLo
-				$script:Betlo = 0
 				$script:BetHold = $BetLold
-			#	$script:Betmed = 0
-			#	$script:BetHold = $BetLold
-			#	$script:Betmed = 0
-			#	$script:BetZone = 23
-			#	$script:BetHi = $BetLo
-#>
-				fff 'success1'
+				$script:Betlo = 0
+				$script:BetLold = 0
+				Call-DisplaySwitch
 				BREAK
 			}
 			{ $_ -eq 12 -AND $Pmed -le $S  } {
-	<#
 				$script:BetZone = 13
-				$script:BetHi = $BetLo
+				$script:BetHi = $BetMed
+				$script:BetHold = $BetMold
 				$script:Betmed = 0
-				$script:BetHold = $BetLold
-				$script:Betmed = 0
-#>
+				$script:BetMold = 0
+				Call-DisplaySwitch
 				BREAK
 			}
 			{ $_ -eq 13 -AND $Plo -le $S  } {
-	<#
 				$script:BetZone = 23
 				$script:BetMed = $BetLo
-				$script:Betlo= 0
-#>
-				fff 'success3'
+				$script:BetMold = $BetLold
+				$script:BetLo = 0
+				$script:BetLold = 0
+				Call-DisplaySwitch
 				BREAK
 			}
 			{ $_ -eq 13 -AND $Phi -le $S  } {
-	<#
 				$script:BetZone = 12
-				$script:BetMed = $BetLo
+				$script:BetMed = $BetHi
+				$script:BetMold = $BetHold
 				$script:BetHi = 0
-#>
-				fff 'success4'
-				BREAK
+				$script:BetHold = 0
+   			Call-DisplaySwitch
+   			BREAK
 			}
 			{ $_ -eq 23 -AND $Pmed -le $S  } {
-		########################################## √
-#				$script:BetZone = 13
-#				$script:BetLold = $BetMold
-#				$script:BetLo = $BetHi
-#				$script:BetMed = 0
-#				$script:BetMold = 0
-#				fff 'success5'
-#				Sleep 2
-#				BREAK
+				$script:BetZone = 13
+				$script:BetLold = $BetMold
+				$script:BetLo = $BetHi
+				$script:BetMed = 0
+				$script:BetMold = 0
+				Call-DisplaySwitch
+				BREAK
 			}
-		########################################## √
-
-
-
-		########################################## √
 			{ $_ -eq 23 -AND $Phi -le $S  } {
-#				$script:BetZone = 12
-#				$script:BetLold = $BetHold
-#				$script:BetLo = $BetHi
-#				$script:BetHold = 0
-#				$script:BetHi = 0
-#				fff 'success6'
-#				Sleep 2
-#				BREAK
+				$script:BetZone = 12
+				$script:BetLold = $BetHold
+				$script:BetLo = $BetHi
+				$script:BetHold = 0
+				$script:BetHi = 0
+				Call-DisplaySwitch
+				BREAK
 			}
-		########################################## √
-
-
-
-			Default { Write-Host 'Houston... Previous Bets Switch' ; exit }
 		}
-		Clear-Host
-		Write-Host -f y  ("Bets Have Switched !!!!!!!!!!!!!!!!!!!!!!`n" *  9 )`n
 	}	##▲	END Call-SwitchBets
 	## Display()
 ##▼ ▼
@@ -309,7 +400,10 @@ $MainScript = {
 		Write-host -n -f DarkGray ( '{0:C0}' -f $CashLo )
 		Write-Host -n  $( " " * 5 )
 		Write-host -n -f DarkGray 'High: '
-		Write-host  -f DarkGray ( '{0:C0}' -f $CashHi )
+		Write-host -n -f DarkGray ( '{0:C0}' -f $CashHi )
+		Write-Host -n  $( " " * 5 )
+		Write-host -f DarkGray $BetMethod
+
 ##▲
 		## Previous Bets
 ##▼▼
@@ -364,9 +458,9 @@ $MainScript = {
 		}
 ##▲
 		## Line
-		Write-Host -f DarkBlue  `n$("_" * 37)`n
+		Write-Host -f DarkBlue  `n$("_" * 38)`n
 		## Percentages
-##▼ ▼
+##▼▼
 		[array]::sort( $LastRA )
 		Write-Host -f darkcyan "  Lo        Med       Hi"
 		Foreach ( $item in $LastRA ) {
@@ -376,31 +470,31 @@ $MainScript = {
 				Write-Host -n '  '
 				Write-Host -n -f DarkGray "$($RA.loCount) "
 				$gap = $($RA.locount).ToString().Length
-				Write-Host -n -f r $( "-" * ( 2 - $gap ) )
+				Write-Host -n $( " " * ( 2 - $gap ) )
 				Write-Host -n -f $RA.loColor   $RA.loPercent
 				Write-Host -n -f $RA.loColor "%"
 				$gap = $RA.loPercent.ToString().Length
-				Write-Host -n -f y $( "-" * ( 6 - $gap ) )
+				Write-Host -n $( " " * ( 6 - $gap ) )
 				##	Med
 				Write-Host -n -f DarkGray "$($RA.medCount) "
 				$gap = $($RA.medcount).ToString().Length
-				Write-Host -n -f r $( "-" * ( 2 - $gap ) )
+				Write-Host -n $( " " * ( 2 - $gap ) )
 				Write-Host -n -f $RA.medColor   $RA.medPercent
 				Write-Host -n -f $RA.medColor "%"
 				$gap = $RA.medPercent.ToString().Length
-				Write-Host -n $( "-" * ( 6 - $gap ) )
+				Write-Host -n $( " " * ( 6 - $gap ) )
 				##	Hi
 				Write-Host -n -f DarkGray "$($RA.hiCount) "
 				$gap = $($RA.hiCount).ToString().Length
-				Write-Host -n -f r $( "-" * ( 2 - $gap ) )
+				Write-Host -n $( " " * ( 2 - $gap ) )
 				Write-Host -n -f $RA.hiColor   $RA.hiPercent
 				Write-Host -n -f $RA.hiColor "%"
 				$gap = $RA.hiPercent.ToString().Length
-				Write-Host -n $( " " * ( 4 - $gap ) )
+				Write-Host -n $( " " * ( 5 - $gap ) )
 				Write-Host -f DarkGray "Last $item"
 			}
 		}
-		Write-Host -f DarkBlue  $("_" * 37)`n
+		Write-Host -f DarkBlue  $("_" * 38)`n
 		Write-Host -n  -f DarkGray `n'  BET:'
 		Write-Host -f DarkGray "      Lo      Med      Hi"
 		Write-Host -n  -f White  "  $"
@@ -433,7 +527,7 @@ $MainScript = {
 			##▼▼
 	If ( $Mode -eq 'Play') {
 							##	Play
-##▼▼
+##▼ ▼
 		Call-Initialize
 		While (1) {
 			If ( $Gob.count -eq 0 ) { Write-Host  "`n BetZone: $BetZone  Units: $Units Inital Bet: $OpeningBet"; Write-Host -n "    " } Else { Call-Display }
@@ -458,6 +552,7 @@ $MainScript = {
 	} Else {
 							##	Audit
 ##▼▼
+		Call-Initialize
 		Foreach ( $S in $ShiftPercent ) {
 			Foreach ( $T in $TrackingLast ) {
 				##	Foreach Spin
@@ -471,7 +566,7 @@ $MainScript = {
 					If ( $Pace -ne 'Turbo' ) { Call-Display }
 					If ( $Pace -eq  'Manual' ) { Read-Host "`n`n`n`n$(" " * (10)) Next" }
 					If ( $Pace -eq  'Turbo' ) { $LastRA = 99999  }
-					If ( $Pace -eq  1 ) { Sleep 1  }
+					If ( $Pace -eq  'Sleep' ) { Sleep $SleepTime }
 					If ( $Gob.Count -ge $T ) {
 						Call-SwitchBets $T $S
 					}
@@ -498,7 +593,9 @@ $MainScript = {
 				fff -n	-f y	"$progress`%     "
 				fff -n	-f c	"$AuditCounter of $TotalLoops     "
 				fff		-f w	"$Min Minutes"
-				If ( $Pace -eq 'Turbo' ) { sleep 1 } Else { Read-Host }
+				If ( $Pace -eq 'Turbo' ) { sleep 1 }
+				If ( $Pace -eq 'Manual') { Read-Host }
+				If ( $Pace -eq 'Sleep') { Sleep $SleepTime }
 				##	Write Summary
 				If ( $WriteSummary) {
 					$CsvName	 = ( $splitRA[1] + '.' + $splitRA[2] + '.csv')
@@ -511,28 +608,25 @@ $MainScript = {
 		}##	 END	FOREACH	PercentLimit
 		$Rob | Format-Table *
 		##	Runtime
-	$Sec = '{0:00}' -f ($Timer.Elapsed.Seconds)
-	$Min = '{0:00}' -f ($Timer.Elapsed.Minutes)
-	Write-Host  "`n`n     Runtime:" ( '{0}:{1}' -f $Min,$Sec ) "`n" -nonewline -f DarkGray
-##	▲	END AUDIT
+		$Sec = '{0:00}' -f ($Timer.Elapsed.Seconds)
+		$Min = '{0:00}' -f ($Timer.Elapsed.Minutes)
+		Write-Host  "`n`n     Runtime:" ( '{0}:{1}' -f $Min,$Sec ) "`n" -nonewline -f DarkGray
+		##	▲	END AUDIT
 	}##▲	END Mode
 }## END MainScript
 
 ##	Settings	____________________________________________________________________________________________________
 
-#	$Mode = 'Audit'
+	$Mode = 'Audit'
 
-## Common Settings
-$AllowExit	= 1 ; $Site = '888' ; $BetZone = 23 ; $OpeningBet = 5 ; $Units = 1 ; $BetMethod	= 'Up2'
-## Play Settings
-If ( $Mode -eq 'Play' ) {
-	$SaveToFile	= 1 ;	$T = 10  <#Tracking#> ; $S = 20  <# SwitchPercent #> ; $LastRA = 5,6,7,8,10,15,20,24,36,40
-}	##	END Mode Play
-## Audit Settings
-If ( $Mode -eq 'Audit' ) {
+$AllowExit	= 1 ; $Site = '888' ; $BetZone = 23 ; $OpeningBet = 5 ; $Units = 1 ;
+$BetMethodRA = 'Up2', 'Double', 'Paroli'; $BetMethod	= $BetMethodRA[2] ; $ParoliLimit = 3;
+If ( $Mode -eq 'Play' ) { ## Play
+	$SaveToFile	= 1 ;	$T = 8  <#Tracking#> ; $S = -1  <# SwitchPercent.. Negative= No Switching  #> ; $LastRA = 5,6,7,8,10,15,20,24,36,40 ; }
+If ( $Mode -eq 'Audit' ) { ## Audit
 	Remove-Item *.csv -exclude "Save*"
-	##	GetData  8 Choices:        62,96,132,137,198,302,419,539
-	## Notes on Choices
+	#	GetData  8 Choices:        62,96,132,137,198,302,419,539
+	# Notes on Choices
 ##▼▼
 	<#
 
@@ -561,17 +655,17 @@ If ( $Mode -eq 'Audit' ) {
 		Betzone 23 is the only one that makes money on its own.
 	#>	
 	##▲ 	END Notes
-	$GetData = Get-ChildItem -af 539* ; [System.Collections.ArrayList] $Data = Get-Content $GetData
+	$GetData = Get-ChildItem -af 62* ; [System.Collections.ArrayList] $Data = Get-Content $GetData
 	$LastRA = 6,12,18,24,36,42,50 ; #	$LastRA = 9999  ##	No Display of Percentages
 	$WriteSummary = 0
-	$ShiftPercent = @(15) ;	$TrackingLast = @(6)
 	$ShiftPercent = @(9999)  <# No Shifting #> ; $TrackingLast = @(9999)  <# No Tracking #>
-	Call-Initialize
-	$Pace = 'Manual'
+	$ShiftPercent = @(15) ;	$TrackingLast = @(6)
+	$Pace = 'Manual' ; 
+	$Pace = 'Sleep'; $SleepTime = .5
 #	$Pace = 'Turbo'
 }	##	END Mode Audit
 & $MainScript
-#TODO		## Need to add something that alerts me when the program changes bets
-#TODO		## Need to add something that allows my to change manually 
-#TODO		## Line up the percentages using 3 digit minumums for values
-#TODO		## progressive bets?   half progressive?  Martingale ??
+
+
+
+

@@ -1,4 +1,5 @@
 ﻿Clear-Host ;
+
 <#
 $Working on:  
 	write tracking value and switching value to screeen in audit
@@ -377,6 +378,14 @@ $MainScript = {
 	## Display()
 ##▼ ▼
 	Function Call-Display {
+		## Tracking/Switching
+##▼▼
+		Write-Host -n -f darkGray `n' Tracking Spins: '
+		Write-Host -n $T
+		Write-Host -n -f darkGray '    Switching: '
+		If ($S -lt 0 ) { fff 'Never' } Else { Write-Host $S`% }
+		Write-Host -f DarkGray  $("_" * 38)
+##▲
 		##	Bet Number
 ##▼▼
 		Write-Host -n -f DarkGray "`n  Bet: "
@@ -458,7 +467,7 @@ $MainScript = {
 		}
 ##▲
 		## Line
-		Write-Host -f DarkBlue  `n$("_" * 38)`n
+		Write-Host -f DarkGray  `n$("_" * 38)`n
 		## Percentages
 ##▼▼
 		[array]::sort( $LastRA )
@@ -494,7 +503,7 @@ $MainScript = {
 				Write-Host -f DarkGray "Last $item"
 			}
 		}
-		Write-Host -f DarkBlue  $("_" * 38)`n
+		Write-Host -f DarkGray  $("_" * 38)`n
 		Write-Host -n  -f DarkGray `n'  BET:'
 		Write-Host -f DarkGray "      Lo      Med      Hi"
 		Write-Host -n  -f White  "  $"
@@ -520,6 +529,13 @@ $MainScript = {
 			Write-Host -n -f yellow $BetHi
 		}
 ##▲
+		## Paroli
+		If ( $ParoliLimit -gt 0 ) {
+				fff `n'this is paroliCount' $ParoliCount
+		}
+
+
+
 #TODO mm
 
 	}##▲	END Call-Display
@@ -572,7 +588,7 @@ $MainScript = {
 					}
 				}## END Foreach Spin
 				##	Summary
-				$Rob = "" | Select-Object -Property Site, Date, Units, Open, Method, Spins, Track , 'Shift%', Lowest, Highest, Cash
+				$Rob = "" | Select-Object -Property Site, Date, Units, Open, Method, Spins, Track , 'Switch%', Lowest, Highest, Cash
 				$splitRA = $GetData.Name.Split(".")
 				$Rob.Site		= $splitRA[1]
 				$Rob.Date		= $splitRA[2]
@@ -580,7 +596,7 @@ $MainScript = {
 				$Rob.Open	   = $OpeningBet
 				$Rob.Method		= $BetMethod
 				$Rob.Spins		= $Gob.Count
-				$Rob.'Shift%'	= $S
+				$Rob.'Switch%'	= $S
 				$Rob.Track		= $T
 				$Rob.Lowest		= $CashLo
 				$Rob.Highest	= $CashHi
@@ -617,20 +633,34 @@ $MainScript = {
 
 ##	Settings	____________________________________________________________________________________________________
 
+	$Mode = 'Play'
+		$SaveToFile = 0
 	$Mode = 'Audit'
+		$Pace = 'Manual' ;
+	#	$Pace = 'Sleep'; $SleepTime = .5
+	#	$Pace = 'Turbo'
+		$WriteSummary = 0
 
-$AllowExit	= 1 ; $Site = '888' ; $BetZone = 23 ; $OpeningBet = 5 ; $Units = 1 ;
-$BetMethodRA = 'Up2', 'Double', 'Paroli'; $BetMethod	= $BetMethodRA[2] ; $ParoliLimit = 3;
+##	Settings	____________________________________________________________________________________________________
+
+
+$AllowExit	= 1 ; $Site = '888' ; $BetZone = 12 ; $OpeningBet = 5 ; $Units = 1 ;
+$BetMethodRA = 'Up2' <# 0 #>, 'Double' <# 1 #>, 'Paroli3' <# 2 #>,'Paroli5' <# 3 #>; $BetMethod = $BetMethodRA[3] ; # $ParoliLimit = 5;
+If ( $BetMethodRA -eq 'Paroli3' ) { $ParoliLimit = 3; }
+If ( $BetMethodRA -eq 'Paroli5' ) { $ParoliLimit = 5 ; }
 If ( $Mode -eq 'Play' ) { ## Play
-	$SaveToFile	= 1 ;	$T = 8  <#Tracking#> ; $S = -1  <# SwitchPercent.. Negative= No Switching  #> ; $LastRA = 5,6,7,8,10,15,20,24,36,40 ; }
+	$T = 20  <#Tracking#> ; $S = 33  <# SwitchPercent.. Negative= No Switching  #> ; $LastRA = 5,6,7,8,10,15,20,24,36,40 ; }
 If ( $Mode -eq 'Audit' ) { ## Audit
 	Remove-Item *.csv -exclude "Save*"
-	#	GetData  8 Choices:        62,96,132,137,198,302,419,539
+	#	GetData  8 Choices:        62 OLG ,96 888 ,132 888 ,137 OLG,198 OLG,302,419 888 ,539 888
 	# Notes on Choices
 ##▼▼
 	<#
 
 	62
+		zone 12.. no switching   Up2  $58
+		zone 13.. no switching   Up2  -$57
+		zone 23.. no switching   Up2  $57
 		 4..40  and 4..40 took 23 minutes
 
 
@@ -655,17 +685,15 @@ If ( $Mode -eq 'Audit' ) { ## Audit
 		Betzone 23 is the only one that makes money on its own.
 	#>	
 	##▲ 	END Notes
-	$GetData = Get-ChildItem -af 62* ; [System.Collections.ArrayList] $Data = Get-Content $GetData
-	$LastRA = 6,12,18,24,36,42,50 ; #	$LastRA = 9999  ##	No Display of Percentages
-	$WriteSummary = 0
-	$ShiftPercent = @(9999)  <# No Shifting #> ; $TrackingLast = @(9999)  <# No Tracking #>
-	$ShiftPercent = @(15) ;	$TrackingLast = @(6)
-	$Pace = 'Manual' ; 
-	$Pace = 'Sleep'; $SleepTime = .5
-#	$Pace = 'Turbo'
+	$GetData = Get-ChildItem -af 96* ; [System.Collections.ArrayList] $Data = Get-Content $GetData
+	$LastRA = 6,18,36,50 ; #	$LastRA = 9999  ##	No Display of Percentages
+#	$ShiftPercent = @(9999)  <# No Shifting #> ; $TrackingLast = @(9999)  <# No Tracking #>
+#	$ShiftPercent = @(1..50) ;	$TrackingLast = @(4..50)
+	$ShiftPercent = @(18) ;	$TrackingLast = @(10)
 }	##	END Mode Audit
 & $MainScript
 
+## Working Query
+#. D:\Documents\WindowsPowershell\sql.ps1 -Query "select * from wp_users"
 
-
-
+#>

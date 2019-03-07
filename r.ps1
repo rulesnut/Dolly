@@ -1,21 +1,133 @@
-﻿Clear-Host ;
-
-<#
-$Working on:  
-	write tracking value and switching value to screeen in audit
-	write tracking value and switching value to screeen in audit
-	further check audit mode
-	save values for  12, 13, 23 with no tracking or switching to compare against
-#>	
-
-
-#TODO		## Need to add something that allows my to change manually 
-
-	#TODO		## progressive bets?   half progressive?  Martingale ??
-	#TODO		## Change paroli to take one press one
-
- ## Variables	√
+﻿Clear-Host
+## Setup
 ##▼▼
+
+## Play or Audit
+$Mode = 'Play'
+#$Mode = 'Audit'
+
+## Allow Exit
+$AllowExit = 'Yes'
+#$AllowExit = 'No'
+
+## Write to Disk
+$WriteToDisk = 'No'
+#$WriteToDisk = 'Yes'
+
+## Site
+$Site =  '888'
+
+## Bet Method
+$BetMethodRA = [Ordered] @{ # Bet Methods
+##▼▼
+	0 = '9 Numbers'
+	1 = 'Up2'
+	2 = 'Method11'
+	3 = 'Paroli3'
+	4 = 'Paroli5'
+	5 = 'UpDown'
+	6 = 'DoubleThenHalfPlus'
+ }
+##▲
+$BetMethod = $BetMethodRA[0] ## <-----------
+
+If ( $BetMethod -eq $BetMethodRA[0] ) { ## 9Numbers
+##▼▼
+	$9NumbersChoiceRA = [system.collections.arrayList] @( 1, 4, 7,10,13,16,19,22,25,28 ) # Can only use these numbers
+																		## 0  1  2  3  4  5  6  7  8  9
+	## Pick A Start Number
+	$9NumberStart = $9NumbersChoiceRA[5] ## Valid ( 0-9 ) from Line Above
+		##▼ ▼
+		Function GetThe9Numbers ( $startNumber ) {
+			$script:BetSpot1 = $9NumberStart
+			$script:BetSpot2 = ($9NumberStart + 1)
+			$script:BetSpot3 = ($9NumberStart + 2)
+			$script:BetSpot4 = ($9NumberStart + 3)
+			$script:BetSpot5 = ($9NumberStart + 4)
+			$script:BetSpot6 = ($9NumberStart + 5)
+			$script:BetSpot7 = ($9NumberStart + 6)
+			$script:BetSpot8 = ($9NumberStart + 7)
+			$script:BetSpot9 = ($9NumberStart + 8)
+		}	
+		##▲
+	# This selects the 9 numbers we will be betting
+	GetThe9Numbers 9NumberStart
+}
+##▼▼ (Other Bet Methods)
+<#
+If ( $BetMethod -eq $BetMethodRA[1] ) {}
+If ( $BetMethod -eq $BetMethodRA[2] ) {}
+If ( $BetMethod -eq $BetMethodRA[3] ) {}
+If ( $BetMethod -eq $BetMethodRA[4] ) {}
+If ( $BetMethod -eq $BetMethodRA[5] ) {}
+If ( $BetMethod -eq $BetMethodRA[6] ) {}
+#>
+##▲ END SETUP
+
+## Opening Bet
+$OpeningBet = 
+
+## Units 
+$Units = 1
+
+##▲ END SETUP
+## Display for the Setup
+##▼▼
+
+If ( $BetMethod -eq $BetMethodRA[0] ) { ## 9Numbers
+	$The9NumbersRA = @()
+	$The9NumbersRA += $BetSpot1
+	$The9NumbersRA += $BetSpot2
+	$The9NumbersRA += $BetSpot3
+	$The9NumbersRA += $BetSpot4
+	$The9NumbersRA += $BetSpot5
+	$The9NumbersRA += $BetSpot6
+	$The9NumbersRA += $BetSpot7
+	$The9NumbersRA += $BetSpot8
+	$The9NumbersRA += $BetSpot9
+	
+}
+If ( $BetMethod -eq $BetMethodRA[1] ) {}
+If ( $BetMethod -eq $BetMethodRA[2] ) {}
+If ( $BetMethod -eq $BetMethodRA[3] ) {}
+If ( $BetMethod -eq $BetMethodRA[4] ) {}
+If ( $BetMethod -eq $BetMethodRA[5] ) {}
+If ( $BetMethod -eq $BetMethodRA[6] ) {}
+
+$SetupRA = [Ordered] @{
+	'	Allow Exit'    = ":  $AllowExit"
+	'	Write to Disk' = ":  $WritetoDisk"
+	'	Play or Audit' = ":  $Mode"
+	'	Website'	      = ":  $Site"
+	'	Bet Method'    = ":  $BetMethod"
+	'	Betting On'		= ":  YOU ARE HERE ************************************************"
+	'	Units'			= ":  $Units"
+	'	Opening Bet'	= ":  $OpeningBet"
+ }
+
+$SetupRA | Format-Table -HideTableHeaders -Autosize
+
+Function Read-HostCustom {
+	Param ( $stuff )
+	Write-Host $stuff -nonewline
+	$Host.UI.ReadLine()
+}
+
+$YN =  Read-HostCustom "`n`n	Everthing OK?   "
+If ($YN -eq  'n') { Exit }	
+##▲ END DISPLAY SETUP
+## System Variables
+##▼▼
+Set-Variable 'Cash'
+Set-Variable 'OpeningBet'
+Set-Variable 'Units'
+Set-Variable 'WinOrLose'
+$Gob = [system.collections.arrayList] @()
+$Timer =  [system.diagnostics.stopwatch]::startnew()
+
+## Units 
+$Units = 1
+<#
 Set-Variable 'AllowExit'	-value 0
 Set-Variable 'AuditCounter'	-value 0
 Set-Variable 'BetLo'
@@ -29,7 +141,7 @@ Set-Variable 'Cash'
 Set-Variable 'CashOld'
 Set-Variable 'CashLo'		-value 0
 Set-Variable 'CashHi'		-value 0
-Set-Variable 'Mode'			-value 'Play'
+#Set-Variable 'Mode'			-value 'Play'
 Set-Variable 'OpeningBet'
 Set-Variable 'Pace'
 Set-Variable 'ParoliCount'	-value 0
@@ -38,15 +150,214 @@ Set-Variable 'SaveToFile'	-value 0
 Set-Variable 'Site'			-value 0
 Set-Variable 'Units'
 Set-Variable 'ValidSpin'
+Set-Variable 'WinCount'		-value 0
+Set-Variable 'LoseCount'	-value 0
 
+$RBhash = [Ordered] @{
+		##▼▼
+	0  = 'green'
+	1	= 'red'
+	2	= 'black'
+	3	= 'red'
+	4	= 'black'
+	5	= 'red'
+	6	= 'black'
+	7	= 'red'
+	8	= 'black'
+	9	= 'red'
+	10	= 'black'
+	11	= 'black'
+	12 = 'red'
+	13	= 'black'
+	14	= 'red'
+	15	= 'black'
+	16	= 'red'
+	17	= 'black'
+	18	= 'red'
+	19	= 'red'
+	20 = 'black'
+	21 = 'red'
+	22 = 'black'
+	23 = 'red'
+	24 = 'black'
+	25 = 'red'
+	26 = 'black'
+	27 = 'red'
+	28 = 'black'
+	29 = 'black'
+	30 = 'red'
+	31 = 'black'
+	32 = 'red'
+	33 = 'black'
+	34 = 'red'
+	35 = 'black'
+	36 = 'red'
+}	
+##▲
 $Gob = [system.collections.arrayList] @()
 $Timer =  [system.diagnostics.stopwatch]::startnew()
 $WinRA = [system.collections.arrayList] @()
 #$TrackingRA = [system.collections.arrayList] @()
 $LastRA = @()
+#>
+##▲
+## Functions
+##▼ ▼
+
+## SpinValidate
+##▼▼
+Function F-SpinValidate ($spin) {
+	If ( $spin -eq 't' -OR $spin -eq 'tt' -OR $spin -eq 'rr' ) { exit }
+	if ( $spin -eq '' ){ Write-Host -f Red " [ INVALID ENTRY ]"  ; Start-Sleep 1 ; Clear-Host ; Continue ; }
+	If ( $spin -match '^[0-9]$' -OR $spin -match '^[1-2][0-9]$' -OR $spin -match '^[3][0-6]$' )  {
+	} Else { Write-Host -f Red " [ INVALID ENTRY ]"  ; Start-Sleep 1 ; Clear-Host ; Continue ; }
+}
+##▲
+## WinOrLose
+##▼▼
+Function F-WinOrLose {
+	Switch ( $BetMethod ) {
+		'9 Numbers' {
+			IF ( $Gob[-1] -NotIn $The9NumbersRA ) {
+				$script:BigWin = 0 ; $script:SmallWin = 0  ## Lost
+			} ElseIf ( $Gob[-1] -eq $The9NumbersRA[0] ) {
+				$script:BigWin = 0 ; $script:SmallWin = 1  ## SmallWin
+			} ElseIf ( $Gob[-1] -eq $The9NumbersRA[1] ) {
+				$script:BigWin = 0 ; $script:SmallWin = 1  ## SmallWin
+			} ElseIF ( $Gob[-1] -eq $The9NumbersRA[2] ) {
+				$script:BigWin = 0 ; $script:SmallWin = 1  ## SmallWin
+			} ElseIF ( $Gob[-1] -eq $The9NumbersRA[3] ) {
+				$script:BigWin = 1 ; $script:SmallWin = 0  ## BigWin
+			} ElseIF ( $Gob[-1] -eq $The9NumbersRA[4] ) {
+				$script:BigWin = 1 ; $script:SmallWin = 0  ## BigWin
+			} ElseIF ( $Gob[-1] -eq $The9NumbersRA[5] ) {
+				$script:BigWin = 1 ; $script:SmallWin = 0  ## BigWin
+			} ElseIF ( $Gob[-1] -eq $The9NumbersRA[6] ) {
+				$script:BigWin = 0 ; $script:SmallWin = 1  ## SmallWin
+			} ElseIF ( $Gob[-1] -eq $The9NumbersRA[7] ) {
+				$script:BigWin = 0 ; $script:SmallWin = 1  ## SmallWin
+			} ElseIF ( $Gob[-1] -eq $The9NumbersRA[8] ) {
+				$script:BigWin = 0 ; $script:SmallWin = 1  ## SmallWin
+			}
+		}
+	}
+}
+
 
 ##▲
+## UpDateCash
+##▼ ▼
+Function F-UpDateCash {
+	Switch ( $BetMethod ) {
+		'9 Numbers' {
+			If ( $script:BigWin -OR $script:Smallwin ) { ## WON
+				fff $script:BigWin		
+				fff $script:SmallWin		
+			} Else  { ## LOST
+				fff "lost"
+			}
+				exit
+			BREAK ;
+		}
+		Default { fff "Houston.... " $UpDateCase ; exit }
+	}
+}
+##▲
+#TODO
+	
+
+##	Function Display Bet Number
+##▼▼
+Function F-DisplayBetnumber {
+	Write-Host -n -f DarkGray "`n  Bet: "
+	Write-Host -n -f DarkGray $Gob.count
+	$gap =  $Gob.count.ToString().Length
+	Write-Host -n $( " " * ( 9 - $gap ) )
+}
+##▲
+##	Function Display Time
+##▼▼
+Function F-DisplayTime {
+		Write-Host -n -f DarkGray "Time: "
+		Write-Host -Object ('{0}:{1}' -f ( '{0:0}' -f $Timer.Elapsed.Hours ) , ( '{0:00}' -f $Timer.Elapsed.Minutes ) ) -nonewline -f DarkGray
+}
+##▲
+##	Function DisplayCash
+##▼▼
+	Function F-DisplayCash {
+		Write-Host -n -f DarkGray "   Cash: "
+		If ( $Cash -ge 0 ) { Write-Host -f Green ( '{0:C0}' -f $Cash ) } Else { Write-Host -f Red ( '{0:C0}' -f $Cash ) }
+	}	
+##▲
+##▲
+
+##_______________________________________
+## MainScript
 $MainScript = {
+	Clear-Host
+	While (1) {
+		$spin  = Read-Host -Prompt "`n`n`n$(" " * (10)) Enter Spin"
+		F-SpinValidate $spin
+		[Void] $Gob.Add( $spin )
+		F-WinOrLose
+      ##  Update Cash Totals
+		F-UpDateCash
+			#FYI Street Bet  2 adjacent rows  pays 5-1
+	
+	
+	
+	
+	
+	
+	
+	
+	
+		
+		Clear-Host
+         ##  Update Cash Totals
+
+			##  Update Next Bet
+
+	
+         ##  Update Display
+#			F-DisplayBetnumber
+#			F-DisplayTime
+
+			##  Write to Disk
+
+		
+#		}
+		exit
+	}## END WHILE LOOP
+
+<#
+		If ( $Gob.count -eq 0 ) { Write-Host  "`n BetZone: $BetZone  Units: $Units Inital Bet: $OpeningBet"; Write-Host -n "    " } Else { Call-Display }
+		$spin  = Read-Host -Prompt "`n`n`n$(" " * (10)) Enter Spin"
+		## Validate
+		Call-SpinValidate
+		Clear-Host
+		[Void] $Gob.Add( $spin )
+		## Update
+		Call-UpDate
+		## Switching
+		If ( $Gob.Count -ge $T ) { Call-SwitchBets $T $S }
+		## Save to File
+		If ( $SaveToFile ) {
+			$DataPath = 'D:\GitHub\Dolly' 
+			$TheDate =  Get-Date -UFormat %b%e ; $Ext = 'txt'
+			$DataFile  =  ($DataPath + "\" + $Site + "." + $TheDate + "." + $Ext)
+			If ($Site ) { $spin | Add-Content $DataFile }
+		}
+	}
+#>
+}## END MainScript
+& $MainScript
+exit
+
+##**********************************************************************************************************************	
+<#	
+##▼▼
+
 	## Initialize()
 ##▼▼
 	Function Call-Initialize {
@@ -77,8 +388,43 @@ $MainScript = {
 ##▼▼
 	Function Call-SpinValidate {
 		If ( $AllowExit ) { If ( $spin -eq 't' -OR $spin -eq 'tt' -OR $spin -eq 'rr' ) { exit } }
+		if ( $spin.ToString().Length -eq 0 ){ Write-Host -f Red " [ INVALID ENTRY ]"  ; Start-Sleep 1 ; Clear-Host ; Continue ; }
+		If ( $spin.substring(0,1) -eq 's' )   {
+			$message = "You are already in that BetZone, Dufus"
+			If ( $spin -eq 's12' ) {
+				If ( $script:BetZone -eq '12' ) { Write-Host -f Red $Message ; Start-Sleep 1 ; Clear-Host ; Continue }
+					$script:BetZone = 12
+					$script:BetLo	 = $BetHi
+					$script:BetMed	 = $BetHi
+					$script:BetLold = $BetHi
+					$script:BetMold = $BetHi
+					$script:BetHi	 = 0
+					$script:BetHold = 0
+					Clear-Host ; Continue ;
+			} ElseIf ($spin -eq 's13' ) {
+				If ( $script:BetZone -eq '13' ) { Write-Host -f Red $Message ; Start-Sleep 1 ; Clear-Host ; Continue }
+					$script:BetZone = 13
+					$script:BetLo	 = $BetMed
+					$script:BetHi	 = $BetMed
+					$script:BetLold = $BetMed
+					$script:BetHold = $BetMed
+					$script:BetMed	 = 0
+					$script:BetMold = 0
+					Clear-Host ; Continue ;
+			} ElseIf ($spin -eq 's23' ) {
+				If ( $script:BetZone -eq '23' ) { Write-Host -f Red $Message ; Start-Sleep 1 ; Clear-Host ; Continue }
+					$script:BetZone = 23
+					$script:BetMed	 = $BetLo
+					$script:BetHi	 = $BetLo
+					$script:BetMold = $BetLo
+					$script:BetHold = $BetLo
+					$script:BetLo	 = 0
+					$script:BetLold = 0
+					Clear-Host ; Continue ;
+			} Else { Write-Host -f Red " [ INVALID CHANGE SPIN ENTRY ]"  ; Start-Sleep 1 ; Clear-Host ; Continue ; }
+		}
 		If ( $spin -match '^[0-9]$' -OR $spin -match '^[1-2][0-9]$' -OR $spin -match '^[3][0-6]$' )  {
-		} Else { Write-Host -f Red " [ NOT VALID NUMBER ]"  ; Start-Sleep 1 ; Clear-Host ; Continue ; }
+		} Else { Write-Host -f Red " [ INVALID ENTRY ]"  ; Start-Sleep 1 ; Clear-Host ; Continue ; }
 	}	##▲	END Call-SpinValidate()
 	## Update()
 ##▼ ▼
@@ -126,8 +472,37 @@ $MainScript = {
 		}	
 		##	▲	END Cash
 		## Bets
+			## UpDown
 		##▼ ▼
-		## Up2
+		If ( $BetMethod -eq 'UpDown' ) {
+			Switch ( $WinRA[-1] ) {
+				## Lose
+				{ $_ -eq 'L12' } { $script:BetLo  = $BetLo +  ( 2 * $Units ) ; $script:BetMed = $BetMed + ( 2 * $Units ) }
+				{ $_ -eq 'L13' } { $script:BetLo  = $BetLo +  ( 2 * $Units ) ; $script:BetHi  = $BetHi  + ( 2 * $Units ) }
+				{ $_ -eq 'L23' } { $script:BetMed = $BetMed + ( 2 * $Units ) ; $script:BetHi  = $BetHi  + ( 2 * $Units ) }
+				## Win
+				{ $_ -eq 'W12' } {
+					$script:BetLo  --
+					$script:BetMed --
+					If ($BetLo  -le $OpeningBet ) { $script:BetLo  = $OpeningBet }
+					If ($BetMed -le $OpeningBet ) { $script:BetMed = $OpeningBet }
+				}
+				{ $_ -eq 'W13' } {
+					$script:BetLo --
+					$script:BetHi --
+					If ($BetLo -le $OpeningBet ) { $script:BetLo = $OpeningBet }
+					If ($BetHi -le $OpeningBet ) { $script:BetHi = $OpeningBet }
+				}
+				{ $_ -eq 'W23' } {
+					$script:BetMed --
+					$script:BetHi --
+					If ($BetMed -le $OpeningBet ) { $script:BetMed = $OpeningBet }
+					If ($BetHi -le $OpeningBet ) { $script:BetHi = $OpeningBet }
+				}
+				Default { Write-Host 'Houston... Bet Up2' ; exit }
+			} ## 	END Switch
+		}##	▲	END UP2
+			## Up2
 		##▼▼
 		If ( $BetMethod -eq 'Up2' ) {
 			Switch ( $WinRA[-1] ) {
@@ -157,31 +532,66 @@ $MainScript = {
 				Default { Write-Host 'Houston... Bet Up2' ; exit }
 			} ## 	END Switch
 		}##	▲	END UP2
-		## Double
+			## DoubleThenHalfPlus
 		##▼▼
-		If ( $BetMethod -eq 'Double' ) {
-			Switch ( $WinRA[-1] ) {
-				## Lose
-				{ $_ -eq 'L12' } { $script:BetLo  = ( $BetLo + ( $BetLo * 2 ) ) ; $script:BetMed  = ( $BetMed + ( $Betmed * 2 ) ) }
-				{ $_ -eq 'L13' } { $script:BetLo  = $BetLo +  ( 2 * $Units ) ; $script:BetHi  = $BetHi  + ( 2 * $Units ) }
-				{ $_ -eq 'L23' } { $script:BetMed = $BetMed + ( 2 * $Units ) ; $script:BetHi  = $BetHi  + ( 2 * $Units ) }
-				## Win
-				{ $_ -eq 'W12' } {
-					$script:BetLo = $OpeningBet
-					$script:BetMed = $OpeningBet
-				}
-				{ $_ -eq 'W13' } {
-					$script:BetLo = $OpeningBet
-					$script:BetHi = $OpeningBet
-				}
-				{ $_ -eq 'W23' } {
-					$script:BetMed = $OpeningBet
-					$script:BetHi = $OpeningBet
-				}
-				Default { Write-Host 'Houston... Bet Double ' ; exit }
-			} ## 	END Switch
-		}##	▲	END UP2
-		## Paroli
+		If ( $BetMethod -eq 'DoubleThenHalfPlus' ) {
+			If ( $WinCount -eq 1 ) {
+				Switch ( $WinRA[-1] ) {
+					## Win
+					{ $_ -eq 'W12' } {
+						$script:BetLo  = ( $Units * 2 )
+						fff $script:BetLo
+
+						$script:BetMed = ( $Betmed * 2 )
+						$script:WinCount ++
+					}
+					{ $_ -eq 'W13' } { $script:BetLo  = ( $BetLo * 2  ) ; $script:BetHi  = ( $BetHi  * 2 )
+						#TODO
+					}
+					{ $_ -eq 'W23' } { $script:BetMed = ( $BetMed * 2 ) ; $script:BetHi  = ( $BetHi  * 2 )
+						#TODO
+					}
+					## Lose
+					{  $_ -eq ( 'W12' -OR 'W13' -OR 'W23' ) } {
+						$Losecount ++ ;
+					}
+					Default { Write-Host 'Houston... Bet DoubleThenHalfPlus' ; exit }
+				} ## 	END Switch
+			} ## END IF
+			If ( $WinCount -eq 2 ) {
+				Switch ( $WinRA[-1] ) {
+					## Win
+					{ $_ -eq 'W12' } {
+						$script:BetLo  = ( $BetLo / 4 )
+						$script:BetLo  = ( $BetLo + ($BetLo * .5 ) )
+						fff $script:BetLo
+		#				$script:BetLo  = ( $BetLo * 1.5 )
+
+						$script:BetMed = ( $Betmed * 2 )
+						$script:WinCount = 0 
+					}
+					{ $_ -eq 'W13' } { $script:BetLo  = ( $BetLo * 2  ) ; $script:BetHi  = ( $BetHi  * 2 )
+						#TODO
+					}
+					{ $_ -eq 'W23' } { $script:BetMed = ( $BetMed * 2 ) ; $script:BetHi  = ( $BetHi  * 2 )
+						#TODO
+					}
+					## Lose
+					{  $_ -eq ( 'W12' -OR 'W13' -OR 'W23' ) } {
+						$Losecount ++ ;
+					}
+					Default { Write-Host 'Houston... Bet DoubleThenHalfPlus' ; exit }
+				} ## 	END Switch
+			} ## END IF
+	
+	
+	
+	
+	
+	
+		##############################################################################
+		}##	▲	END DoubleThenHalfPlus
+			## Paroli
 		##▼▼
 <#	
 	You place your first $5 bet and win $5. You place your second bet of $10.
@@ -192,7 +602,7 @@ $MainScript = {
 	it will be harder to complete the sequence. If you were to lose at any time
 	you go back to your original starting bet and begin the sequence over again
 #>
-	
+<#	
 		If ( $BetMethod -eq 'Paroli' ) {
 			Switch ( $WinRA[-1] ) {
 				## Win
@@ -376,7 +786,7 @@ $MainScript = {
 		}
 	}	##▲	END Call-SwitchBets
 	## Display()
-##▼ ▼
+##▼▼
 	Function Call-Display {
 		## Tracking/Switching
 ##▼▼
@@ -531,7 +941,7 @@ $MainScript = {
 ##▲
 		## Paroli
 		If ( $ParoliLimit -gt 0 ) {
-				fff `n'this is paroliCount' $ParoliCount
+			#	fff `n'this is paroliCount' $ParoliCount
 		}
 
 
@@ -539,10 +949,12 @@ $MainScript = {
 #TODO mm
 
 	}##▲	END Call-Display
+	<#
 	## Mode		Main Script
-			##▼▼
 	If ( $Mode -eq 'Play') {
-							##	Play
+		##	Play	Play	Play	Play	Play	Play	Play	Play	Play	Play	Play	Play	Play	Play	Play	Play
+			##▼▼
+		##	Play	Play	Play	Play	Play	Play	Play	Play	Play	Play	Play	Play	Play	Play	Play	Play
 ##▼ ▼
 		Call-Initialize
 		While (1) {
@@ -566,7 +978,7 @@ $MainScript = {
 		}
 ##	▲	END PLAY
 	} Else {
-							##	Audit
+		##	Audit	Audit	Audit	Audit	Audit	Audit	Audit	Audit	Audit	Audit	Audit	Audit	Audit	Audit	Audit	Audit
 ##▼▼
 		Call-Initialize
 		Foreach ( $S in $ShiftPercent ) {
@@ -632,24 +1044,28 @@ $MainScript = {
 }## END MainScript
 
 ##	Settings	____________________________________________________________________________________________________
+#<#
+#	$Mode = 'Play'
+	$SaveToFile = 0
+#>
 
-	$Mode = 'Play'
-		$SaveToFile = 0
-	$Mode = 'Audit'
+<#
+#	$Mode = 'Audit'
 		$Pace = 'Manual' ;
 	#	$Pace = 'Sleep'; $SleepTime = .5
 	#	$Pace = 'Turbo'
 		$WriteSummary = 0
-
+#>
 ##	Settings	____________________________________________________________________________________________________
 
-
-$AllowExit	= 1 ; $Site = '888' ; $BetZone = 12 ; $OpeningBet = 5 ; $Units = 1 ;
-$BetMethodRA = 'Up2' <# 0 #>, 'Double' <# 1 #>, 'Paroli3' <# 2 #>,'Paroli5' <# 3 #>; $BetMethod = $BetMethodRA[3] ; # $ParoliLimit = 5;
-If ( $BetMethodRA -eq 'Paroli3' ) { $ParoliLimit = 3; }
-If ( $BetMethodRA -eq 'Paroli5' ) { $ParoliLimit = 5 ; }
+<#
+$AllowExit	= 1 ; $Site = '888' ; $BetZone = 12 ; $OpeningBet = 5 ; $Units = 5 ;
+# $ParoliLimit = 5;
+#If ( $BetMethodRA -eq 'Paroli3' ) { $ParoliLimit = 3; }
+#If ( $BetMethodRA -eq 'Paroli5' ) { $ParoliLimit = 5 ; }
 If ( $Mode -eq 'Play' ) { ## Play
-	$T = 20  <#Tracking#> ; $S = 33  <# SwitchPercent.. Negative= No Switching  #> ; $LastRA = 5,6,7,8,10,15,20,24,36,40 ; }
+	$T = 9999  <#Tracking#> ;# $S = -33  <# SwitchPercent.. Negative= No Switching  #> ; $LastRA = 5,6,7,8,10,15,20,24,36,40 ; }
+<#
 If ( $Mode -eq 'Audit' ) { ## Audit
 	Remove-Item *.csv -exclude "Save*"
 	#	GetData  8 Choices:        62 OLG ,96 888 ,132 888 ,137 OLG,198 OLG,302,419 888 ,539 888
@@ -685,15 +1101,149 @@ If ( $Mode -eq 'Audit' ) { ## Audit
 		Betzone 23 is the only one that makes money on its own.
 	#>	
 	##▲ 	END Notes
+<#
 	$GetData = Get-ChildItem -af 96* ; [System.Collections.ArrayList] $Data = Get-Content $GetData
 	$LastRA = 6,18,36,50 ; #	$LastRA = 9999  ##	No Display of Percentages
 #	$ShiftPercent = @(9999)  <# No Shifting #> ; $TrackingLast = @(9999)  <# No Tracking #>
 #	$ShiftPercent = @(1..50) ;	$TrackingLast = @(4..50)
-	$ShiftPercent = @(18) ;	$TrackingLast = @(10)
-}	##	END Mode Audit
-& $MainScript
-
-## Working Query
-#. D:\Documents\WindowsPowershell\sql.ps1 -Query "select * from wp_users"
+#	$ShiftPercent = @(18) ;	$TrackingLast = @(10)
+#}	##	END Mode Audit
 
 #>
+##▲
+
+## Mysql LOAD DATA
+##▼▼
+
+<#
+LOAD DATA
+    [LOW_PRIORITY | CONCURRENT] [LOCAL]
+    INFILE 'file_name'
+    [REPLACE | IGNORE]
+    INTO TABLE tbl_name
+    [PARTITION (partition_name [, partition_name] ...)]
+    [CHARACTER SET charset_name]
+    [{FIELDS | COLUMNS}
+        [TERMINATED BY 'string']
+        [[OPTIONALLY] ENCLOSED BY 'char']
+        [ESCAPED BY 'char']
+    ]
+    [LINES
+        [STARTING BY 'string']
+        [TERMINATED BY 'string']
+    ]
+    [IGNORE number {LINES | ROWS}]
+    [(col_name_or_user_var
+        [, col_name_or_user_var] ...)]
+    [SET col_name={expr | DEFAULT},
+        [, col_name={expr | DEFAULT}] ...]
+
+#>
+
+##▲
+## TODO list
+##▼▼
+<#
+
+find a decent free website
+check dns on namecheap
+add on domain at infinityfree
+
+
+$Working on:  
+	write tracking value and switching value to screeen in audit
+	write tracking value and switching value to screeen in audit
+	further check audit mode
+	save values for  12, 13, 23 with no tracking or switching to compare against
+#>	
+
+
+## Working Query
+#. D:\Documents\WindowsPowershell\sql.ps1 -Query "select * from spin"
+
+#TODO		## Need to add something that allows my to change manually 
+
+	#TODO		## progressive bets?   half progressive?  Martingale ??
+	#TODO		## Change paroli to take one press one
+
+#>
+##▲
+
+ ## System Variables √
+##▼▼
+<#
+Set-Variable 'AllowExit'	-value 0
+Set-Variable 'AuditCounter'	-value 0
+Set-Variable 'BetLo'
+Set-Variable 'BetMed'
+Set-Variable 'BetHi'
+Set-Variable 'BetLold'
+Set-Variable 'BetMold'
+Set-Variable 'BetHold'
+Set-Variable 'BetZone'
+Set-Variable 'Cash'
+Set-Variable 'CashOld'
+Set-Variable 'CashLo'		-value 0
+Set-Variable 'CashHi'		-value 0
+#Set-Variable 'Mode'			-value 'Play'
+Set-Variable 'OpeningBet'
+Set-Variable 'Pace'
+Set-Variable 'ParoliCount'	-value 0
+Set-Variable 'ParoliLimit'	-value 3
+Set-Variable 'SaveToFile'	-value 0
+Set-Variable 'Site'			-value 0
+Set-Variable 'Units'
+Set-Variable 'ValidSpin'
+Set-Variable 'WinCount'		-value 0
+Set-Variable 'LoseCount'	-value 0
+
+$RBhash = [Ordered] @{
+		##▼▼
+	0  = 'green'
+	1	= 'red'
+	2	= 'black'
+	3	= 'red'
+	4	= 'black'
+	5	= 'red'
+	6	= 'black'
+	7	= 'red'
+	8	= 'black'
+	9	= 'red'
+	10	= 'black'
+	11	= 'black'
+	12 = 'red'
+	13	= 'black'
+	14	= 'red'
+	15	= 'black'
+	16	= 'red'
+	17	= 'black'
+	18	= 'red'
+	19	= 'red'
+	20 = 'black'
+	21 = 'red'
+	22 = 'black'
+	23 = 'red'
+	24 = 'black'
+	25 = 'red'
+	26 = 'black'
+	27 = 'red'
+	28 = 'black'
+	29 = 'black'
+	30 = 'red'
+	31 = 'black'
+	32 = 'red'
+	33 = 'black'
+	34 = 'red'
+	35 = 'black'
+	36 = 'red'
+}	
+##▲
+$Gob = [system.collections.arrayList] @()
+$Timer =  [system.diagnostics.stopwatch]::startnew()
+$WinRA = [system.collections.arrayList] @()
+#$TrackingRA = [system.collections.arrayList] @()
+$LastRA = @()
+#>
+##▲
+##▼▼
+##▲

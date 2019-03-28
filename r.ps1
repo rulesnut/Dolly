@@ -1,8 +1,7 @@
 ﻿Clear-Host
-##▼▼
 ## Play or Audit
 $Mode = 'xPlay'
-
+##▼▼  PLAY
 ##	Play Variables
 ##▼▼
 If ($Mode -eq 'Play') {
@@ -92,7 +91,7 @@ Function F-SpinValidate ($spin) {
 Function F-WinOrLose {
 	Switch ( $BetMethod ) {
 		'9 Numbers' {
-			IF ( $Gob[-1] -NotIn $The9NumbersRA ) {
+			IF ( $Gob[-1] -notin $The9NumbersRA ) {
 				$script:WinOrLose = 'L'   ## Lost
 			} ElseIf ( $Gob[-1] -eq $The9NumbersRA[0] ) {
 				$script:WinOrLose = 'S'  ## SmallWin
@@ -467,57 +466,46 @@ If ( $Mode -eq 'Play' ) {
 
 ##▲
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+## Audit Setup
+$DataRA_Pick	= 96	; $__DataRA_Pick = F-Line
+$WriteToDisk	= 0
+$OpeningBet		= 1
+$Units			= 1
+$BetMethod		= 0	; $__BetMethod = F-Line
+$2Lines_Start	= 10	; $__2Lines_Start = F-Line
 ##	Audit Functions
-##▼▼
-
-## WinOrLose
-##▼▼
-Function F-WinOrLose {
-	If ( $Gob.count -gt 0 ) {
-		Switch ( $BetMethod ) {
-			'9 Numbers' {
-				IF ( $Gob[-1] -NotIn $The9NumbersRA ) {
-					$script:WinOrLose = 'L'   ## Lost
-				} ElseIf ( $Gob[-1] -eq $The9NumbersRA[0] ) {
-					$script:WinOrLose = 'S'  ## SmallWin
-				} ElseIf ( $Gob[-1] -eq $The9NumbersRA[1] ) {
-					$script:WinOrLose = 'S'  ## SmallWin
-				} ElseIF ( $Gob[-1] -eq $The9NumbersRA[2] ) {
-					$script:WinOrLose = 'S'  ## SmallWin
-				} ElseIF ( $Gob[-1] -eq $The9NumbersRA[3] ) {
-					$script:WinOrLose = 'B'  ## BigWin
-				} ElseIF ( $Gob[-1] -eq $The9NumbersRA[4] ) {
-					$script:WinOrLose = 'B'  ## BigWin
-				} ElseIF ( $Gob[-1] -eq $The9NumbersRA[5] ) {
-					$script:WinOrLose = 'B'  ## BigWin
-				} ElseIF ( $Gob[-1] -eq $The9NumbersRA[6] ) {
-					$script:WinOrLose = 'B'  ## SmallWin
-				} ElseIF ( $Gob[-1] -eq $The9NumbersRA[7] ) {
-					$script:WinOrLose = 'B'  ## SmallWin
-				} ElseIF ( $Gob[-1] -eq $The9NumbersRA[8] ) {
-					$script:WinOrLose = 'B'  ## SmallWin
-				}
-			}
-		}
-	}
-}
-
-##▲
-
+##▼ ▼
 ##	Display
 ##▼▼
 Function F-Display {
-	## Header
-	Write-Host -n  ' '$BetMethod'    '
-	Write-Host -n 'Units: '$Units'    '
-	Write-Host -n 'Open: '$OpeningBet'    '
-	Write-Host -n 'W/L: '$WinOrLose'    '
+	Write-Host -n -f DarkGray `n'Units: ' ; fff -n $Units ' '
+	Write-Host -n -f DarkGray 'Open: ' ; fff -n $OpeningBet ' '
+	Write-Host -n -f DarkGray 'Dolly: '
+	If ( $Gob.count -eq 0 ) { Write-Host -n -f DarkGray '  ' } Else { Write-Host -n -f y $Gob[-1] }
+	Write-Host -n -f DarkGray 'W/L: '
+	If ( $Gob.count -eq 0 ) { Write-Host -n -f DarkGray '  '
+		 Write-Host -n -f y $WinOrLose 
+	} Else {
+		If ( $WinOrLose -eq 'l' ) {
+			Write-Host -n -f r 'Lost'
+		} Else {
+			Write-Host -n -f Green  'Win'
+		}
 
-	Write-Host 
+	
+	}
 	##	Hand Number
+	Write-Host
 	Write-Host -n -f DarkGray "Hand: "
 	Write-Host -n -f DarkGray $($Gob.count + 1)
 	Write-Host -n  $( " " * ( 4 - ( $Gob.count + 1 ).ToString().Length ) )
+	
+	
+	
+	##	Site
+	
+	
+	
 	##	Cash
 	If ( $Cash -ge 0 ) { $color = 'Green'  } Else { $color = 'Red' }
 	$_CashHi = '{0:C0}' -f $CashHi
@@ -531,39 +519,113 @@ Function F-Display {
 	Write-Host -n $( " " * ( 17 - ( $_CashLo.ToString().Length + ( $( '{0:C0}' -f $_Cash ) ).ToString().Length ) ) )  #gap √
 	Write-Host -n -f $color  'Cash: '
 	Write-host -f $color $_Cash
-	#Sleep 10
-} ##▲ END Function Display
+	} ##▲ END Function Display
+## WinOrLose
+##▼ ▼
+	Function F-WinOrLose {
+		If ( $Gob.count -gt 0 ) {
+			Switch ( $BetMethod ) {
+				{ $_ -eq 0 } { ## 2 Lines
+					Switch ( $Gob[-1] ) {
+						{ $_ -notin $BetRA }
+							{	
+								$script:WinOrLose = 'l'
+								BREAK
+							}
+						{ $_ -in $BetRA }
+							{	
+								$script:WinOrLose = 'W'
+								BREAK
+							}
+					}
+				}	
+				{ $_ -eq 1 } { ## Other
+					Switch ( $Gob[-1] ) {
+						{ $_ -notin $BetRA }
+							{	
+								$script:WinOrLose = 'l'
+								BREAK
+							}
+					}
+				}	
+				Default {
+					Clear-Host
+					Write-Host -n -f r `n'	 Undefined WinOrLose for '
+					Write-host -n  -f White "Bet Method $BetMethod"
+					Write-Host -n -f r ' at Line : '; $__WinOrLoseFunction = F-Line
+					Write-Host -f y  ( $__WinOrLoseFunction - 5 )`n`n`n`n`n  ; exit }
+			} ##	END Switch BetMethod
+		} ## End Gob Count
+	} ## END WinOrLose Function
 
-##	Check Valid Setup
-##▼▼
-<#
-## Check for Valid Data File
-If ( $DataFile -notin $DataFileRA ) {
-	Clear-Host
-	Write-Host -f r  `n'	The $DataFile nominated is not valid at Line: ' $__DataFile
-	Write-Host -f r '	You must enter a valid number from the $DataFileRA located at line: ' $__DataFileRA`n`n
-	exit
-}
-
-## Check for Valid BetMethod Number
-If ( $BetMethodNumber -gt $BetMethodRA.Count ) {
-	Clear-Host
-	Write-Host -f r  `n'	The $BetMethodNumber is not valid at Line: '  $__BetMethodNumber
-	Write-Host -f r '	You must enter a valid number from the $BetMethodRA located at line: ' $__BetMethodRA`n`n
-	exit
-}
-## Check for Valid 9NumberStart
-If ( $BetMethod[$BetMethodNumber] -eq '9 Numbers' ) {
-	fff 'check start number'
-	sleep 2
-	Clear-Host
-#	Write-Host -f r  `n'	The $BetMethodNumber is not valid at Line: ' ( $BetMethodNumber_Line -1 )
-#	Write-Host -f r '	You must enter a valid number from the $BetMethodRA located at line: ' ( $BetMethodRA_Line -1 )`n`n
-	exit
-}
-#>
 ##▲
+## Update Cash
+##▼▼
+##▲
+## Update Bets
+##▼▼
+##▲
+# Housekeeping                          #
+##▼▼
+##	Check for Valid Setup Variables
+##▼ ▼
+## Data File Selection
+##▼▼
+	Function F-Data_Selection {
 
+		If ( $DataRA_Pick -notin $DataRA ) {
+			Clear-Host
+			Write-Host -n  -f r  `n'		InValid Entry at Line:  '; Write-host  -f y  $__DataRA_Pick `n
+			Write-Host -f c '		Valid Choices at line: ' $__DataRA`n`n
+			exit
+		}
+	}
+
+##▲
+## Bet Method
+##▼▼
+	Function F-BetMethod {
+		If ( $BetMethod -notin $BetMethodHash.Keys ) {
+			Clear-Host
+			Write-Host -n -f r  `n'		Invalid Selections at Line:  '; Write-Host -f y  $__BetMethod `n
+			Write-Host -f c '		     Valid Choices at line: ' $__BetMethodHash`n`n
+			exit
+		}
+	}
+
+##▲
+##	2Lines_Start
+##▼▼
+	Function F-2Lines_Start {
+		$script:ValidStartRA = 1,4,7,10,13,16,19,22,25,28 ; $script:__ValidStartRA = F-Line
+		If ( $2Lines_Start -notin $ValidStartRA ) {
+			Clear-Host
+			Write-Host -n  -f r  `n"		Invalid Selection at Line:  "; Write-Host -f y  $__2Lines_Start`n
+			Write-Host -f c '		    Valid Choices at line: ' $__ValidStartRA`n`n
+			exit
+		}
+		Switch ( $2Lines_Start ) {
+			1	{ $script:BetRA = 0..9 }
+			4	{ $script:BetRA = 4..12 }
+			7	{ $script:BetRA = 7..15 }
+			10	{ $script:BetRA = 10..18 }
+			13	{ $script:BetRA = 13..21 }
+			16	{ $script:BetRA = 16..24 }
+			19	{ $script:BetRA = 19..27 }
+			22	{ $script:BetRA = 22..30 }
+			25	{ $script:BetRA = 25..33 }
+			28	{ $script:BetRA = 28..36 }
+		} ##	END Switch
+	} ##	END Function
+
+##▲
+##	Time
+##▼▼
+	Function F-Time {
+		Write-Host -n -f DarkGray `n`n`n`n"  Time: "
+		Write-Host -Object ('{0}:{1}' -f ( '{0:0}' -f $Timer.Elapsed.Hours ) , ( '{0:00}' -f $Timer.Elapsed.Minutes ) ) -n -f DarkGray
+	}
+##▲
 ##  Read-Host Custom
 ##▼▼
 Function Read-HostCustom {
@@ -572,10 +634,10 @@ Function Read-HostCustom {
 	$Host.UI.ReadLine()
 }
 ##▲
-
+##▲
 ##▲ End Audit Functions
 ##	Audit Variables
-##▼ ▼
+##▼▼
 Set-Variable 'Cash'			-value 0
 Set-Variable 'CashHi'		-value 0
 Set-Variable 'CashLo'		-value 0
@@ -583,137 +645,106 @@ Set-Variable 'WriteToDisk'	-value 0
 Set-Variable 'WinOrLose'	-value 'N/A'
 $Gob = [system.collections.arrayList] @()
 $Timer =  [system.diagnostics.stopwatch]::startnew()
-$Bet_Hash = [Ordered] @{
-	 0 = '2 Double Lines' ; 1 = 'Other' ; 2 = 'Other' ; 3 = 'Other' ; 4 = 'Other' ; 5 = 'Other' ; 6 = 'Other' ; 7 = 'Other' ;
-	 8 = 'MartinGale' ; 9 = 'Fibonaci' <# 0,1,1,2,3,5,8,13,21,35,55,89,144,233,377 #> ; 10 = 'Paroli' ;
-	 11 = '2WinsAddHalf' ; 12 = 'UpDown' ; 13 = 'Flat'; 14 = 'D`Alembert' ; 15 = 'Oscar'; 16 = 'Patrick'; 17 = 'Kelly'  } ; $__Bet_Hash = F-Line
-$Data_RA = 62,82,96,132,198,302,419,539 ; $__Data_RA = F-Line
+$DataRA = 62,82,96,132,198,302,419,539 ; $__DataRA = F-Line
+$BetMethodHash = [Ordered] @{ 0 = '2 Lines' ; 1 = 'Other1' ; 2 = 'Other2' ; 3 = 'Other3' } ; $__BetMethodHash  = F-Line
+#	 4 = 'Other' ; 5 = 'Other' ; 6 = 'Other' ; 7 = 'Other'  
+#	 8 = 'MartinGale' ; 9 = 'Fibonaci' <# 0,1,1,2,3,5,8,13,21,35,55,89,144,233,377 #> ; 10 = 'Paroli' ;
+#	 11 = '2WinsAddHalf' ; 12 = 'UpDown' ; 13 = 'Flat'; 14 = 'D`Alembert' ; 15 = 'Oscar'; 16 = 'Patrick'; 17 = 'Kelly'  } ;
 
 ##▲
-## Audit Setup
-##▼ ▼
-$WriteToDisk = 0
-$DataFile	 = 96	; $__DataFile = F-Line
-$OpeningBet	 = 1
-$Units		 = 1
-$BetChoice	 = 0	; $__BetChoice = F-Line
-$2DblLineKey = 4	; $__2DblLineKey = F-Line
-
-##▲ END Audit Setup
 ## Audit Initialize
-##▼ ▼
+##▼▼
+## Check Data File Selection
+F-Data_Selection
+## Check Bet Method
+F-BetMethod
 
+##	BetMethod
+If ( $BetMethod -eq  0 ) {
+	## Validate Bet Numbers
+	F-2Lines_Start
+}
 
 $Bet = $OpeningBet
 $BetOld = $OpeningBet
-$BetMethod =  $Bet_Hash[$BetChoice]
-$Data = Get-Content (Get-ChildItem -af $DataFile*) ##	Read the file into an Array
+$Bet = $OpeningBet
+$BetOld = $OpeningBet
+#$Data = Get-Content (Get-ChildItem -af $DataRA_Pick*)
+
 
 ##▲ End Audit Initialize
 ## Audit Boot Display
-##▼ ▼
+##▼▼
 If ( $Mode -ne 'Play' ) { ## AUDIT
 	Clear-Host
 	Write-Host -f y `n'                     Audit Setup'
 	Write-Host -f y   '                     ==========='
 	
 	## Units
-	$gaptag =  'Units:'
-	$gap =  $gaptag.ToString().Length
-	Write-Host -n $( " " * ( 27 - $gap ) )
-	Write-Host -n -f DarkGray $gaptag
-	$gaptag =  $Units
-	Write-Host -n $( " " * 2)
-	Write-Host $gaptag
+	$gap =  'Units:  '.ToString().Length
+	Write-Host -n -f DarkGray $( " " * ( 28 - $gap ) ) 'Units:  '
+	Write-Host $Units
 	
 	## Opening Bet
-	$gaptag =  'Opening Bet:'
-	$gap =  $gaptag.ToString().Length
-	Write-Host -n $( " " * ( 27 - $gap ) )
-	Write-Host -n -f DarkGray $gaptag
-	$gaptag =  $OpeningBet
-	Write-Host -n $( " " * 2)
-	Write-Host $gaptag
+	$gap =  'Opening Bet:  '.ToString().Length
+	Write-Host -n -f DarkGray $( " " * ( 28 - $gap ) ) 'Opening Bet:  '
+	Write-Host $OpeningBet
 	
 	## Write to Disk
-	$gaptag =  'Write To Disk:'
-	$gap =  $gaptag.ToString().Length
-	Write-Host -n $( " " * ( 27 - $gap ) )
-	Write-Host -n -f DarkGray $gaptag
-	Write-Host -n $( " " * 2)
-	$gaptag =  $WriteToDisk
+	$gap = 'Write to Disk:  '.ToString().Length
+	Write-Host -n -f DarkGray $( " " * (28 - $gap ) ) 'Write to Disk:  '
 	IF ( $WriteToDisk ) { Write-Host 'Yes' } Else { Write-Host  'No' }
 	
-	## Opening Bet
-	$gaptag =  'Opening Bet:'
-	$gap =  $gaptag.ToString().Length
-	Write-Host -n $( " " * ( 27 - $gap ) )
-	Write-Host -n -f DarkGray $gaptag
-	$gaptag =  $OpeningBet
-	Write-Host -n $( " " * 2)
-	Write-Host $gaptag
-
 	## Bet Method
-	$gaptag =  'Bet Method:'
-	$gap =  $gaptag.ToString().Length
-	Write-Host -n $( " " * ( 27 - $gap ) )
-	Write-Host -n -f DarkGray $gaptag
-	Write-Host -n $( " " * 2)
-	$gaptag =  $BetMethod
-	Write-Host $gaptag
-
-	## Start Number
-	If ( $BetMethod -eq '9 Numbers' ) {
-	$gaptag =  'Start Number'
-	$gap =  $gaptag.ToString().Length
-	Write-Host -n $( " " * ( 27 - $gap ) )
-	Write-Host -n -f DarkGray $gaptag
-	Write-Host -n $( " " * 2)
-	$gaptag =  $BetMethod
-	Write-Host $gaptag
+	$gap =  'Bet Method:  '.ToString().Length
+	Write-Host -n -f DarkGray $( " " * ( 28 - $gap ) ) 'Bet Method:  '
+	Write-Host $BetMethodHash[0]
+	
+	## 2 Lines Start
+	If ( $BetMethod -eq 0  ) {
+		$gaptag =  'Betting On:  '
+		$gap =  'Betting On:  '.ToString().Length
+		Write-Host -n $( " " * ( 29 - $gap ) )
+		Write-Host -n -f DarkGray 'Betting On:  '
+		Write-Host -n "$2Lines_Start-$($2Lines_Start + 8)"
 	}
 
-
-
-
-
-#	
-	$YN =  Read-HostCustom "`n`n	OK ?   "
-	If ($YN -ne  'y') { Exit }	
+	##  Good to Go
+	$YN =  Read-HostCustom "`n`n		      OK ?   "
+	If ($YN -eq  'n') { Exit }	
 	Clear-Host ; Write-Host
-#	exit
-	
 }
 
 ##▲
 ## Audit Execution
-##▼▼
-
-
+$Data = 1,4,7,20,16,10,23,36
+#TODO
 Foreach ($i in $Data ) {
+	Clear-Host
 	F-Display
-	Sleep 1
+	sleep 1
 	[Void] $Gob.Add( $i )
 	## Update
 	F-WinOrLose
+#	F-UpDateBets
+#	F-UpDateCash
 
 #	1. What is the bet method	
 #	2. Did I win or lose
 #	3. Update cash 
 #	4. Update Bets
 	
-#	F-UpDateBets
-#	F-UpDateCash
-	Clear-Host
+
 #	Reset variables ??
+
+#	sleep 1
 }
-##▲
-Write-Host $Gob	
-##▲
+
+F-Time
+Write-Host `n`n`n''
+exit
 
 #Get-Childitem variable:\b*	##	Display ALL variables in Session
-F-Time
-exit
 ##▼▼ OLD stuff
 ##**********************************************************************************************************************	
 <#	

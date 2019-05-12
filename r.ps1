@@ -1,11 +1,13 @@
 ﻿Clear-Host
+#>
 ## Play or Audit	√
-$Mode = 'P'
-If ( $Mode -eq 'AP' ) {
+$Mode = 'AUDIT'
+#$Mode = 'P'
+If ( $Mode -eq 'P' ) {
 ##▼▼  PLAY
 ##	Play Variables
 ##▼▼
-If ($Mode -eq 'Play') {
+If ($Mode -eq 'P') {
 	Set-Variable 'Cash'				-value 0
 	Set-Variable 'CashHi'			-value 0
 	Set-Variable 'CashLo'			-value 0
@@ -72,7 +74,7 @@ If ($Mode -eq 'Play') {
 ##▲
 ##	Play Functions
 ##▼▼
-If ($Mode -eq 'Play' ) {
+If ($Mode -eq 'P' ) {
 ## Play Calculations Functions
 ##▼▼
 ##	SpinValidate		Play Calculation
@@ -107,11 +109,11 @@ Function F-WinOrLose {
 			} ElseIF ( $Gob[-1] -eq $The9NumbersRA[5] ) {
 				$script:WinOrLose = 'B'  ## BigWin
 			} ElseIF ( $Gob[-1] -eq $The9NumbersRA[6] ) {
-				$script:WinOrLose = 'B'  ## SmallWin
+				$script:WinOrLose = 'S'  ## SmallWin
 			} ElseIF ( $Gob[-1] -eq $The9NumbersRA[7] ) {
-				$script:WinOrLose = 'B'  ## SmallWin
+				$script:WinOrLose = 'S'  ## SmallWin
 			} ElseIF ( $Gob[-1] -eq $The9NumbersRA[8] ) {
-				$script:WinOrLose = 'B'  ## SmallWin
+				$script:WinOrLose = 'S'  ## SmallWin
 			}
 		}
 	}
@@ -123,7 +125,7 @@ Function F-WinOrLose {
 ## UpDateBets			Play Calculation
 ##▼▼
 Function F-UpDateBets {
-	If ( $Mode -eq 'Play' ){
+	If ( $Mode -eq 'P' ){
 		Switch ( $BetMethod ) {
 			'9 Numbers' {
 				$script:BetOld = $Bet
@@ -330,7 +332,7 @@ Function F-Bets {
 
 ## Play Initialize Setup
 ##▼▼
-If ( $Mode -eq 'Play' ) {
+If ( $Mode -eq 'P' ) {
 ## Allow Exit
 	$AllowExit = 'Yes'
 #$AllowExit = 'No'
@@ -401,7 +403,7 @@ If ( $Mode -eq 'Play' ) {
 
 ## Play Initialize Display
 ##▼▼
-If ( $Mode -eq 'Play' ) {
+If ( $Mode -eq 'P' ) {
 	$SetupRA = [Ordered] @{
 		'	Play or Audit' = ":  $Mode"
 		'	Allow Exit'    = ":  $AllowExit"
@@ -416,12 +418,12 @@ If ( $Mode -eq 'Play' ) {
 
 	$SetupRA | Format-Table -HideTableHeaders -Autosize
 
-	Function Read-HostCustom {
+	Function F-Read-HostCustom {
 		Param ( $stuff )
 		Write-Host $stuff -nonewline
 		$Host.UI.ReadLine()
 	}
-	$YN =  Read-HostCustom "`n`n	Everthing OK?   "
+	$YN =  F-Read-HostCustom "`n`n	Everthing OK?   "
 	If ($YN -eq  'n') { Exit }	
 	Clear-Host
 }
@@ -429,7 +431,9 @@ If ( $Mode -eq 'Play' ) {
 ##▲ End Play Initialize
 ## Play Execution
 ##▼▼
-If ( $Mode -eq 'Play' ) {
+
+
+If ( $Mode -eq 'P' ) {
 	While (1) {
 		F-Cash
 		##Line
@@ -453,45 +457,76 @@ If ( $Mode -eq 'Play' ) {
 	}	## END WHILE LOOP
 }
 ##▲
+
 ##▲
 } Else {
-##▼ ▼  AUDIT
+#▼ ▼  AUDIT
 ## Variables
 ##▼▼
-$WinLose = 'N/A'
+$WinLose = [system.collections.arrayList] @()
 $Bet = $BetOld = $OpeningBet = 0
 $Cash = $CashOld = $CashHi = $CashLo = 0
 $Gob = [system.collections.arrayList] @()
 $Timer =  [system.diagnostics.stopwatch]::startnew()
-$PG = 'D:\PostgreSQL\11\bin\psql.exe'
 $BetMethodHash = [Ordered] @{ 0 = '2 Lines' ; 1 = 'Other1' ; 2 = 'Other2' ; 3 = 'Other3' } ; $__BetMethodHash  = F-Line
 ###	 4 = 'Other' ; 5 = 'Other' ; 6 = 'Other' ; 7 = 'Other'  
 ###	 8 = 'MartinGale' ; 9 = 'Fibonaci' <# 0,1,1,2,3,5,8,13,21,35,55,89,144,233,377 #> ; 10 = 'Paroli' ;
 ###	 11 = '2WinsAddHalf' ; 12 = 'UpDown' ; 13 = 'Flat'; 14 = 'D`Alembert' ; 15 = 'Oscar'; 16 = 'Patrick'; 17 = 'Kelly'  } ;
-
+$PG = 'D:\PostgreSQL\11\bin\psql.exe'
+$SpinNames  = [system.collections.arrayList] @()
+$SpinSites = [system.collections.arrayList] @()
+$SpinCounts = [system.collections.arrayList] @()
+[system.collections.arrayList]$SpinTables = . $PG -U Tavi -h localhost -p 5432 -d'roulette' -t -c  "SELECT tablename FROM pg_catalog.pg_tables where tablename ~ 's\d[0-9]\d[0-9]*' ORDER by tablename "
+$SpinTables.RemoveAt($SpinTables.Count-1); $SpinTables = $SpinTables.trim()  ## GOT ALL THE SPIN TABLES
+Foreach ($item in $SpinTables ) { $split = $item.split("_") ; [Void]$SpinNames.Add($split[0]) ; [Void]$SpinSites.Add($split[1]) ; [Void]$SpinCounts.Add($split[2]) }
+$AllData = [system.collections.arrayList] @()
+Foreach ($item in $SpinTables ) {
+	[system.collections.arrayList]$SpinData = . $PG -U Tavi -h localhost -p 5432 -d'roulette' -t -c "SELECT spins FROM $item "	
+	$SpinData.RemoveAt($SpinData.Count-1); $SpinData = $SpinData.trim()
+	[Void]$script:AllData.Add($SpinData)
+}
 ##▲
-## Main Loop Functions
-Function F-UpdateStatus				{ ##▼▼
-	[Void] $Gob.Add( $i )
-	$script:BetOld = $script:Bet
-	$script:CashOld = $script:Cash
+## Functions
+##▼▼
+Function Execute-Main {
+	If ( $Pick = 0 ) {
+	} Else {
+		Foreach  ( $i in $Data ) {
+#Write-Progress -Activity "Search in Progress" -Status "$i% Complete:" -PercentComplete $i;
+			F-UpdateStatus
+			F-UpdateCash
+			F-UpdateBets
+			F-MainDisplay
+#   $t = read-host; If ($t -eq 't' ) { Write-Host ; Write-Host; Write-Host; exit }
+			sleep .5
+		}
+		F-Results
+		F-ResultsDisplay
+	}
+}
+	## Stats Functions Buried in Main Display
+Function F-Stats          	{ ##▼▼
+	## Cash Less than 
+#	If ( $CashLo -le -200 ) {  ## 200 :: killed in  197, 419, NOT 62, killed 96,  killed 549,
+#			exit	
+#	}
 	## Win Or Lose
 	##▼▼
 	Switch ( $BetMethod ) {
 		{ $_ -eq 0 } { ## 2 Lines
 			Switch ( $Gob[-1] ) {
 				{ $_ -notin $BetRA } { ## Lose
-						$script:WinLose = 'L'
+						$script:WinLose += 'L'
 						BREAK
 					}
 				{ $_ -in $BetRA[0..2] -OR  $_ -in $BetRA[-3..-1]  }
 					{	
-						$script:WinLose = 'S'
+						$script:WinLose += 'S'
 						BREAK
 					}
 				{ $_ -in $BetRA[3..6]  }
 					{	
-						$script:WinLose = 'B'
+						$script:WinLose += 'B'
 						BREAK
 					}
 				Default { exit }
@@ -501,7 +536,7 @@ Function F-UpdateStatus				{ ##▼▼
 			Switch ( $Gob[-1] ) {
 				{ $_ -in $BetRA }
 					{	
-						$script:WinLose = 'W'
+						$script:WinLose += 'W'
 						BREAK
 					}
 			}
@@ -516,10 +551,56 @@ Function F-UpdateStatus				{ ##▼▼
 	##▲ END WinOrLose
 }
 ##▲
+	## Main Loop Functions
+Function F-UpdateStatus				{ ##▼▼
+	[Void] $Gob.Add( $i )
+	$script:BetOld = $script:Bet
+	$script:CashOld = $script:Cash
+	## Win Or Lose
+	##▼▼
+	Switch ( $BetMethod ) {
+		{ $_ -eq 0 } { ## 2 Lines
+			Switch ( $Gob[-1] ) {
+				{ $_ -notin $BetRA } { ## Lose
+						$script:WinLose += 'L'
+						BREAK
+					}
+				{ $_ -in $BetRA[0..2] -OR  $_ -in $BetRA[-3..-1]  }
+					{	
+						$script:WinLose += 'S'
+						BREAK
+					}
+				{ $_ -in $BetRA[3..6]  }
+					{	
+						$script:WinLose += 'B'
+						BREAK
+					}
+				Default { exit }
+			}
+		}	
+		{ $_ -eq 1 } { ## Other
+			Switch ( $Gob[-1] ) {
+				{ $_ -in $BetRA }
+					{	
+						$script:WinLose += 'W'
+						BREAK
+					}
+			}
+		}	
+		Default {
+			Clear-Host
+			Write-Host -n -f r `n'	 Undefined WinLose for '
+			Write-host -n  -f White "Bet Method $BetMethod"
+			Write-Host -n -f r ' at Line : '; $__WinLoseFunction = F-Line
+			Write-Host -f y  ( $__WinLoseFunction - 5 )`n`n`n`n`n  ; exit }
+	} ##	END Switch BetMethod
+	##▲ END WinOrLose
+
+} ##▲
 Function F-UpDateCash						{ ##▼▼
 	Switch ( $BetMethod ) {
 		'0' {
-			Switch ( $WinLose ) {
+			Switch ( $WinLose[-1] ) {
 				'L' { $script:Cash = ( $Cash + ( -$Bet * 2 ) )   ; BREAK } ##  Lost
 				'B' { $script:Cash = ( $Cash + ( 10 * $BetOld )) ; BREAK } ##  Big Win
 			   'S' { $script:Cash =  ($Cash + ( 4 * $BetOld ))  ; BREAK } ## Small Win
@@ -537,7 +618,7 @@ Function F-UpDateCash						{ ##▼▼
 Function F-UpDateBets						{ ##▼▼
 	Switch ( $BetMethod ) {
 		'0' {
-			Switch ( $WinLose ) {
+			Switch ( $WinLose[-1] ) {
 				'L' { $script:Bet = ( $Bet + $Units ) ; BREAK } ## LOST
 				'B' { $script:Bet = ( $Bet - ( 5 * $Units )) ; BREAK } ##  Big Win
 				'S' { $script:Bet =  ($Bet - ( 2 * $Units )) ; BREAK } ## Small Win
@@ -551,9 +632,10 @@ Function F-UpDateBets						{ ##▼▼
 }
 ##▲
 Function F-MainDisplay				 { ##▼▼
+	Clear-host
 	Switch ( $BetMethod ) {
 		'0' {
-#			Write-Host -f DarkGray "12345678901234567 20 234567 30 234567 40 234567 50 234567 60 234567 70 234567 80 234567 90 23456 100"
+	#		Write-Host -f DarkGray "12345678901234567 20 234567 30 234567 40 234567 50 234567 60 234567 70 234567 80 234567 90 23456 100"
 			Write-Host -n -f DarkGray `n' Units: ' ; Write-Host -n  -f DarkGray $Units ' '
 			Write-Host -n -f DarkGray 'Open: ' ; Write-Host -n -f DarkGray $OpeningBet ' '
 			Write-Host -n -f DarkGray 'Site: ' ; Write-Host -n -f DarkGray $Site ' '
@@ -561,17 +643,14 @@ Function F-MainDisplay				 { ##▼▼
 			Write-Host -n -f DarkGray "Hand: "
 			Write-Host -n $Gob.count
 			Write-Host -n -f DarkGray "/"
-			Write-Host -n -f DarkGray $PG_Data.count ' '
+			Write-Host -n -f DarkGray $Pick
+			Write-Host -n $( " " * ( 5 - ( ($Gob.Count).ToString().Length ) ) )  #gap √
 			Write-Host -n -f DarkGray 'Dolly: '
 			Write-Host -n -f yellow $Gob[-1]
-			$gap  =  $Gob[-1].ToString().Length
-			Write-Host -n $( " " * ( 3 - $gap ) )
-			Write-Host -n -f DarkGray ' W/L: '
-			If ( $WinLose -eq 'L' ) {$WL = 'Lost' ;  Write-Host -n -f red $WL }
-			If ( $WinLose -eq 'B' ) {$WL = 'Big' ;Write-Host -n -f green $WL }
-			If ( $WinLose -eq 'S' ) {$WL = 'Small' ;Write-Host -n -f green $WL }
-			$gap  =  $WL.ToString().Length
-			Write-Host -n $( " " * ( 6 - ( $WL.ToString().Length ) ) )
+		#	Write-Host -n $( " " * ( 3 - ( ($Gob[-1]).ToString().Length ) ) )
+			If ( $WinLose[-1] -eq 'L' ) {$WL = '  Lost     ' ;  Write-Host -n -f red $WL }
+			If ( $WinLose[-1] -eq 'B' ) {$WL = '  Big Win  ' ;  Write-Host -n -f green $WL }
+			If ( $WinLose[-1] -eq 'S' ) {$WL = '  Small Win' ;  Write-Host -n -f green $WL }
 			##	Cash
 			If ( $Cash -ge 0 ) { $color = 'Green'  } Else { $color = 'Red' }
 			$_CashHi = '{0:C0}' -f $CashHi
@@ -579,7 +658,7 @@ Function F-MainDisplay				 { ##▼▼
 			$_Cash = '{0:C0}' -f $Cash
 			Write-Host -n -f Red '   Low: '
 			Write-host -n -f Red $_CashLo
-			Write-Host -n $( " " * ( 14 - ( $_CashLo.ToString().Length + ( $( '{0:C0}' -f $_Cash ) ).ToString().Length ) ) )  #gap √
+			Write-Host -n $( " " * ( 10 - ( $_CashLo.ToString().Length ) ) )  #gap √
 			Write-Host -n -f Green '  Hi: '
 			Write-host -n -f Green $_CashHi
 			Write-Host -n  $( " " * ( 10 - $_CashHi.ToString().Length ) )
@@ -587,80 +666,66 @@ Function F-MainDisplay				 { ##▼▼
 			Write-host -f $color $_Cash
 			Write-Host -f darkcyan  $("_" * 140)	## Solid Line
 			## History
-			Write-Host -n -f DarkGray `n' Prev Spin:    '
+			Write-Host -n -f DarkGray `n' Spin:    '
 			Write-Host -n $BetOld
 			Write-Host -n $( " " * ( 6 - ( $BetOld.ToString().Length ) ) )
 			Write-Host -n $BetOld
-			If ( $WinLose -eq 'L' ) {  ## Lost
+			If ( $WinLose[-1] -eq 'L' ) {  ## Lost
 				Write-Host -n $( " " * ( 6 - ( $BetOld.ToString().Length ) ) )
 				Write-Host -n -f Red 'Bet Lost: '
 				$wl = 'Bet Lost: '
-				Write-Host -f Red ('{0:C0}' -f ( -$BetOld * 2 ) )
+				Write-Host -n -f Red ('{0:C0}' -f ( -$BetOld * 2 ) )
 			} Else {   ## Win
-				If ( $WinLose -eq 'B' ) { ## Big Win
+				If ( $WinLose[-1] -eq 'B' ) { ## Big Win
 					Write-Host -n $( " " * ( 6 - ( $BetOld.ToString().Length ) ) )
 					Write-Host -n -f green   'BIG WIN: '
-					Write-Host -f green ('{0:C0}' -f ( $BetOld * 10 ) )
+					Write-Host -n -f green ('{0:C0}' -f ( $BetOld * 10 ) )
 				} Else {  ## Small Win
 					Write-Host -n $( " " * ( 6 - ( $BetOld.ToString().Length ) ) )
 					Write-Host -n -f green   'Small Win: '
-					Write-Host -f green ('{0:C0}' -f ( $BetOld * 4 ) )
+					Write-Host -n -f green ('{0:C0}' -f ( $BetOld * 4 ) )
 				}
-				
 			}
-			Write-Host
-			## Stats
-			Write-Host    "some kind of stats here"
+			Write-Host '           Cash Was: '$cashold
+			
+			## stats functions
+			F-Stats
 			Write-Host -f darkcyan  $("_" * 140)	## Solid Line
 			Write-Host
 			## Current Bets
-			If ( $Gob.count -gt 0 ) {
-				$gap = ( ($BetRA[0]).ToString().Length + ($BetRA[0]).ToString().Length )
-				Write-Host -n $( " " * ( 12 - $gap ) )
-				Write-Host -n -f yellow "$($BetRA[0])-$($BetRA[5])"
-				Write-Host -n  $( " " * 5  )
-				Write-Host -n -f yellow "$($BetRA[3])-$($BetRA[8])"
-				Write-Host -f DarkGray '     Total Bet:'
-				$gap = ($BetRA[0]).ToString().Length
-				Write-Host -n $( " " * ( 12 - $gap ) )
-				Write-host -n $Bet
-				$gap = ( ($BetRA[5]).ToString().Length + ($BetRA[3]).ToString().Length + $Bet.ToString().Length )
-				Write-Host -n $( " " * ( 14 - $gap ) )
-				Write-Host -n $Bet
-				#$gap = ($Bet * 2).ToString().Length
-				$gap = ($Bet).ToString().Length
-				Write-Host -n -f r  $( " " * ( 10 - $gap ) )
-				Write-Host -n  $( '{0:C0}' -f  $( $Bet * 2 ) )
-				Write-Host  ("`n " * 3)
-			}
+			Write-Host -f DarkGray ' Next Bet:'`n
+			$gap = ( ($BetRA[0]).ToString().Length + ($BetRA[0]).ToString().Length )
+			Write-Host -n $( " " * ( 12 - $gap ) )
+			Write-Host -n -f yellow "$($BetRA[0])-$($BetRA[5])"
+			Write-Host -n  $( " " * 5  )
+			Write-Host -f yellow "$($BetRA[3])-$($BetRA[8])"
+			$gap = ($BetRA[0]).ToString().Length
+			Write-Host -n $( " " * ( 12 - $gap ) )
+			Write-host -n $Bet
+			$gap = ( ($BetRA[5]).ToString().Length + ($BetRA[3]).ToString().Length + $Bet.ToString().Length )
+			Write-Host -n $( " " * ( 14 - $gap ) )
+			Write-Host -n $Bet
+			$gap = ($Bet).ToString().Length
+			Write-Host -n -f r  $( " " * ( 10 - $gap ) )
+			Write-Host -n  $( '{0:C0}' -f  $( $Bet * 2 ) )
+			Write-Host  ("`n " * 3)
 		}## END $BetMethod  0
 	} ## END Switch
 } ##▲ END Function Display
-## Event Functions
-Function F-GetData								 { ##▼▼
-	$script:PG_Data = @()
-	[system.collections.arrayList] $script:PG_DataString = . $PG -U Tavi -h localhost -p 5432 -d'roulette' -t -c  "SELECT spins  FROM $PG_Table"
-	$PG_DataString.RemoveAt($PG_DataString.Count-1)
-	Foreach ( $item in $PG_DataString )	{
-	$script:PG_Data += [int]$item	
-	}
-}
-Function F-Verify_PG_Pick					 { ##▼▼
-	[system.collections.arrayList] $PG_TablesAllUnsorted = . $PG -U Tavi -h localhost -p 5432 -d'roulette' -t -c  "SELECT table_name FROM information_schema.tables WHERE table_name ~ 's[0-9]{6}.*' "
-	$PG_TablesAllUnsorted.RemoveAt($PG_TablesAllUnsorted.Count-1)
-	$PG_Tables = $PG_TablesAllUnsorted | Sort
-	$script:PG_Table = @( $PG_Tables ) -match $PG_Pick #  Need script cast in case of failure to match
-	If ( -Not ( @( $PG_Table ) -match $PG_Pick ) ) {
-		[system.collections.arrayList] $TableNumbers = @()
-		Clear-Host; Write-Host -f r  `n'		PG_Pick Failure'`n;
+	## Event Functions
+Function F-Verify_Pick								 { ##▼▼
+	If ( $Pick -eq 0 -OR ( -NOT( @( $SpinCounts -contains $Pick) ) ) ) {
+		If  ( $Pick -eq 0 ) { } Else {
+		Clear-Host; Write-Host -f r  `n'		Pick Data Failure'`n;
 		Write-Host -n '	Invalid Selection at line: '
-		Write-host  -f c  $__PG_Pick `n
+		Write-host  -f c  $__Pick `n
 		Write-Host -n '	Valid Choices are: '
-		For ($i= 0 ; $i -lt $PG_Tables.Count ; $i++ ) { $TableNumbers += ($PG_Tables[$i]).substring(13) }
-		Write-Host -f y  $TableNumbers`n`n
+		Write-Host -f y  $SpinCounts`n`n
 		exit
+		}
 	}
 }
+
 ##▲
 Function F-Verify_BetMethod				{ ##▼▼
 	If ( $BetMethod -notin $BetMethodHash.Keys ) {
@@ -685,12 +750,6 @@ Function F-Verify_2Lines_Start	{ ##▼▼
 		Write-Host -n '	Valid Choices at line: '
 		Write-Host -f y  $__ValidStartRA`n`n
 		exit
-		
-		
-		Clear-Host
-		Write-Host -n  -f r  `n"		Invalid Selection at Line:  "; Write-Host -f y  $__2Lines_Start`n
-		Write-Host -f c '		    Valid Choices at line: ' $__ValidStartRA`n`n
-		exit
 	}
 	Switch ( $2Lines_Start ) {
 		1	{ $script:BetRA = 0..9 }
@@ -706,80 +765,85 @@ Function F-Verify_2Lines_Start	{ ##▼▼
 	}
 }
 ##▲
-Function F-RunSetup												{ ##▼▼
+Function Run-Setup												{ ##▼▼
 	$script:bet = $OpeningBet
-	$script:Site = $PG_Table.substring(9,3)
-	$TheDate = ('20' + $PG_Table.substring(2,6))
-	$script:RetDate = ($TheDate.substring(0,4) + "-" +  $TheDate.substring(4,2)     + "-" +  $TheDate.substring(6,2)               )
-	$RecCount = $PG_Table.substring(13)
+	If ( $Pick -eq 0 ) {
+		$script:Site = 'All'
+		$script:RetDate = 'All'
+		$script:RecCount = 'All'
+		$script:data = $AllData
+	} Else {
+		$script:PickIndex = (0..($SpinCounts.Count-1)) | where {$SpinCounts[$_] -eq $Pick} # Get PickIndex of selected pick
+		$y =  "20" + $SpinNames[$PickIndex].substring(1,2)
+		$m =  $SpinNames[$PickIndex].substring(3,2)
+		$d =  $SpinNames[$PickIndex].substring(5,2)
+		$script:RetDate = ( ("20" + $SpinNames[$PickIndex].substring(1,2)) + '-' + ( $SpinNames[$PickIndex].substring(3,2) ) + '-' + ( $SpinNames[$PickIndex].substring(5,2) ) )
+		$script:Site = $SpinSites[$PickIndex]
+		$script:RecCount = $SpinCounts[$PickIndex]
+		$script:data = $AllData[$PickIndex]
+	}
+	## $ViewSetupPage
+##▼▼
 	If ($ViewSetupPage) {
-		If ( $Mode -ne 'Play' ) { ## AUDIT
-			Clear-Host
-			Write-Host -f y `n'                     Audit Setup'
-			Write-Host -f y   '                     ==========='
-			## Site
-			$gap =  'Site:  '.ToString().Length
-			Write-Host -n -f DarkGray $( " " * ( 28 - $gap ) ) 'Site:  '
-			Write-Host $Site
-			## Date
-			$gap =  'Retrieval Date:  '.ToString().Length
-			Write-Host -n -f DarkGray $( " " * ( 28 - $gap ) ) 'Retrieval Date:  '
-			Write-Host $RetDate
-			## Record Count
-			$gap =  'Record Count:  '.ToString().Length
-			Write-Host -n -f DarkGray $( " " * ( 28 - $gap ) ) 'Record Count:  '
-			Write-Host $RecCount
-			## Betting Units
-			$gap =  'Betting Units:  '.ToString().Length
-			Write-Host -n -f DarkGray $( " " * ( 28 - $gap ) ) 'Betting Units:  '
-			Write-Host $('{0:C0}' -f $Units)
-			## Opening Bet
-			$gap =  'Opening Bet:  '.ToString().Length
-			Write-Host -n -f DarkGray $( " " * ( 28 - $gap ) ) 'Opening Bet:  '
-			Write-Host $('{0:C0}' -f $OpeningBet)
-			
-			## Write to Disk
-			$gap = 'Write to Disk:  '.ToString().Length
-			Write-Host -n -f DarkGray $( " " * (28 - $gap ) ) 'Write to Disk:  '
-			IF ( $WriteToDisk ) { Write-Host 'Yes' } Else { Write-Host  'No' }
-			
-			## Bet Method
-			$gap =  'Bet Method:  '.ToString().Length
-			Write-Host -n -f DarkGray $( " " * ( 28 - $gap ) ) 'Bet Method:  '
-			Write-Host $BetMethodHash[0]
-			
-			## 2 Lines Start
-			If ( $BetMethod -eq 0  ) {
-				$gaptag =  'Betting On:  '
-				$gap =  'Betting On:  '.ToString().Length
-				Write-Host -n $( " " * ( 29 - $gap ) )
-				Write-Host -n -f DarkGray 'Betting On:  '
-				Write-Host -n "$2Lines_Start-$($2Lines_Start + 8)"
-			}
-
+		Clear-Host
+		Write-Host -f y `n'                     Audit Setup'
+		Write-Host -f y   '                     ==========='
+		## Site
+		$gap =  'Site:  '.ToString().Length
+		Write-Host -n -f DarkGray $( " " * ( 28 - $gap ) ) 'Site:  '
+		Write-Host $Site
+		## Date
+		$gap =  'Retrieval Date:  '.ToString().Length
+		Write-Host -n -f DarkGray $( " " * ( 28 - $gap ) ) 'Retrieval Date:  '
+		Write-Host $RetDate
+		## Record Count
+		$gap =  'Record Count:  '.ToString().Length
+		Write-Host -n -f DarkGray $( " " * ( 28 - $gap ) ) 'Record Count:  '
+		Write-Host $RecCount
+		## Betting Units
+		$gap =  'Betting Units:  '.ToString().Length
+		Write-Host -n -f DarkGray $( " " * ( 28 - $gap ) ) 'Betting Units:  '
+		Write-Host $('{0:C0}' -f $Units)
+		## Opening Bet
+		$gap =  'Opening Bet:  '.ToString().Length
+		Write-Host -n -f DarkGray $( " " * ( 28 - $gap ) ) 'Opening Bet:  '
+		Write-Host $('{0:C0}' -f $OpeningBet)
+		
+		## Write to Disk
+		$gap = 'Write to Disk:  '.ToString().Length
+		Write-Host -n -f DarkGray $( " " * (28 - $gap ) ) 'Write to Disk:  '
+		IF ( $WriteToDisk ) { Write-Host 'Yes' } Else { Write-Host  'No' }
+		
+		## Bet Method
+		$gap =  'Bet Method:  '.ToString().Length
+		Write-Host -n -f DarkGray $( " " * ( 28 - $gap ) ) 'Bet Method:  '
+		Write-Host $BetMethodHash[0]
+		
+		## 2 Lines Start
+		If ( $BetMethod -eq 0  ) {
+			$gaptag =  'Betting On:  '
+			$gap =  'Betting On:  '.ToString().Length
+			Write-Host -n $( " " * ( 29 - $gap ) )
+			Write-Host -n -f DarkGray 'Betting On:  '
+			Write-Host -n "$2Lines_Start-$($2Lines_Start + 8)"
+		}
 			##  Good to Go
-			$YN =  Read-HostCustom "`n`n		      OK ?   "
+			$YN =  F-Read-HostCustom "`n`n		      OK ?   "
 			If ($YN -eq  'n') { Exit }	
 			Clear-Host ; Write-Host
-		}
-
-	}
-}
-
-##▲
-Function Read-HostCustom							{ ##▼▼
+	} ##▲
+} ##▲
+Function F-Read-HostCustom	   	{ ##▼▼
 	Param ( $stuff )
 	Write-Host $stuff -nonewline
 	$Host.UI.ReadLine()
 }
 ##▲
-##▲
-## Result Functions
+	## Result Functions
 Function F-Results								 { ##▼▼
-	Write-Host `n"  Results"`n`n`n
 	$script:SpinTotal = $Gob.count
 	#$Results = "" | Select-Object -Property  Site, Month, Day, Year, Open, Units, Method, Spins, Track , 'Switch%', Lowest, Highest, Cash
-	$Script:Results = '' | Select-Object -Property  Site, Units, Opening , Method, SpinTotal, CashLo, CashHi, Cash
+	$Script:Results = '' | Select-Object -Property  Site, Units, Opening , Method, SpinTotal, CashLo, CashHi, Cash,Date
 	$Results.Site		= $Site
 	$Results.Units	   = $Units
 	$Results.Method	= $BetMethod
@@ -788,6 +852,13 @@ Function F-Results								 { ##▼▼
 	$Results.CashHi	= $CashHi
 	$Results.Cash	= $Cash
 	$Results.Opening	= $OpeningBet
+	$Results.Date		=  $RetDate
+	Foreach ( $item in $Results) {
+		fff $item
+	}
+	
+#	fff $Results
+	#3sleep 5
 #	Write-Host $Results.Site
 #	Write-Host $Results.Units
 #	Write-Host $Results.Method
@@ -818,19 +889,22 @@ Function F-Results								 { ##▼▼
 
 } ##▲ END Function Results
 Function F-ResultsDisplay	 { ##▼▼
+	Write-Host -f DarkCyan `n"  Results:"`n
 	Write-Host -n -f DarkGray '  Site: '
 	Write-Host -n $Results.Site
+	Write-Host -n -f DarkGray '  Date: '
+	Write-Host -n $Results.Date
 	Write-Host -n -f DarkGray  '  Units: '
 	Write-Host -n $Results.Units
-	Write-Host -n -f DarkGray  '  Opening Bet '
+	Write-Host -n -f DarkGray  '  Open '
 	Write-Host -n $Results.Opening
 	Write-Host -n -f DarkGray  '  Bet Method: '
 	Write-Host -n $Results.Method
-	Write-Host -n -f DarkGray  '  Spin Count: '
+	Write-Host -n -f DarkGray  '  Count: '
 	Write-Host -n $Results.SpinTotal
-	Write-Host -n -f Red  '  Cash Lo: '
+	Write-Host -n -f Red  '  Lo: '
 	Write-Host -n -f Red $Results.CashLo
-	Write-Host -n -f Green  '  Cash Hi: '
+	Write-Host -n -f Green  '  Hi: '
 	Write-Host -n -f Green $Results.CashHi
 	Write-Host -n -f DarkGray  '  Cash: '
 	If ($Cash -ge 0 ) {
@@ -842,34 +916,22 @@ Function F-ResultsDisplay	 { ##▼▼
 
 
 } ##▲ END Function Results
-##	AUDIT SETUP !!!!!!!!!!!!!!!!!!!
 
-## 197 419 62 96 549 137 302 132 82 165 275
-#197 = -$4000 ;  419 = $1502 ;  62 = $170 ;  96 = -$50 ;  549 = $1840 ;  137 = $98 ;  302 = $1070 ;  132 =$304 ;  82 = $302 ;  165 = $582 ; 275 = $606
-$PG_Pick			= 419		<#	Pick which input data from PostgreSQL	#> ; $__PG_Pick = F-Line; F-Verify_PG_Pick <# Verify Variable #>
+##▲
+##	0 for ALL	OR	 419 62 96 549 137 302 132 82 165 275 400 37
+$Pick				= 37		<#	Pick single table from PostgreSQL	... 0 for ALL #> ; $__Pick = F-Line; F-Verify_Pick
 $OpeningBet		= 1
 $Units			= 1
 $BetMethod		= 0		<#	Select Bet Method	#> ; $__BetMethod = F-Line ; F-Verify_BetMethod <# Verify Variable #>
 $2Lines_Start	= 16		<#	Number of Line for Bet	#> ; $__2Lines_Start = F-Line ; F-Verify_2Lines_Start <# Verify Variable #>
 $WriteToDisk	= 0		<#	Save Results to a file	#>;  ##	In Progress
-$ViewSetupPage	= 0		<#	Show Setup Screen	#> ; $__SetupScreen = F-Line ; F-RunSetup
-F-GetData	<#  Get the spin table from the Database	#>
-$PG_Data = 22,5,13
-Foreach ($i in $PG_Data ) {
-	F-UpdateStatus
-	F-UpdateCash
-	F-UpdateBets
-	Clear-Host
-	F-MainDisplay
+$ViewSetupPage	= 1		<#	Show Setup Screen	#> ; # $__SetupScreen = F-Line 
+Run-Setup
+Execute-Main
 
-#	sleep 1
-  # $t = read-host; If ($t -eq 't' ) { Write-Host ; Write-Host; Write-Host; exit }
-}
-F-Results
-F-ResultsDisplay
 #$Results = "" | Select-Object -Property Table, Site, Open, Units, Method, Spins, Track , 'Switch%', Lowest, Highest, Cash
-##  Write to Disk ??
-##  Write to Database ??
+
+#. $PG -U Tavi -h localhost -p 5432 -d'roulette' -c "INSERT INTO recap (site) VALUES ('891' )"
 <#
 If ( $WriteToDisk ) {
 ##▼▼
@@ -896,7 +958,7 @@ If ( $WriteToDisk ) {
 ##▲
 #>
 } ##▲	END MODE
-Write-Host -n -f DarkCyan `n`n`n"  Script Time " ( '{0}:{1}:{2}' -f (  '{0:00}' -f $Timer.Elapsed.Hours ) , ( '{0:00}' -f $Timer.Elapsed.Minutes )  , ( '{0:00}' -f $Timer.Elapsed.Seconds )  )  `n`n`n`n
+Write-Host -n -f DarkCyan `n`n`n`n`n`n"  Script Time " ( '{0}:{1}:{2}' -f (  '{0:00}' -f $Timer.Elapsed.Hours ) , ( '{0:00}' -f $Timer.Elapsed.Minutes )  , ( '{0:00}' -f $Timer.Elapsed.Seconds )  )
 ##▼▼ OLD stuff
 ##**********************************************************************************************************************	
 <#	
